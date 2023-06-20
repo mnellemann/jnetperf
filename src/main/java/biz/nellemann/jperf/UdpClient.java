@@ -20,7 +20,7 @@ public class UdpClient {
     private byte[] buf;
 
     public UdpClient() throws UnknownHostException, SocketException {
-        log.info("UdpClient");
+        log.info("UdpClient()");
         socket = new DatagramSocket();
         address = InetAddress.getByName("localhost");
     }

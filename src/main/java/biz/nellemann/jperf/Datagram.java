@@ -23,7 +23,7 @@ public class Datagram {
     private final int HEADER_LENGTH = 24;
 
     private final int type;
-    private final int size;
+    private final int length;
     private final long sequence;
     private final long timestamp;
 
@@ -33,16 +33,16 @@ public class Datagram {
     /**
      * Create new empty datagram
      * @param type
-     * @param size
+     * @param lenght
      * @param sequence
      */
-    public Datagram(int type, int size, long sequence) {
+    public Datagram(int type, int lenght, long sequence) {
         this.type = type;
-        this.size = size;
+        this.length = lenght;
         this.sequence = sequence;
         this.timestamp = System.currentTimeMillis();
 
-        this.data = new byte[size];
+        this.data = new byte[lenght - HEADER_LENGTH];
     }
 
 
@@ -55,39 +55,36 @@ public class Datagram {
 
         log.info("Datagram() 1");
 
-        ByteBuffer buffer = ByteBuffer.allocate(payload.length);
+        ByteBuffer buffer = ByteBuffer.wrap(payload);
 
         // Order is importent when assembling header fields like this
         type = buffer.getInt();
-        size = buffer.getInt();
+        length = buffer.getInt();
         sequence = buffer.getLong();
         timestamp = buffer.getLong();
 
         log.info("Datagram() 2 ");
 
-
-        // Read everything after Header
-        data = new byte[size];
-
         log.info("Datagram() 3 ");
 
-        buffer.get(data, HEADER_LENGTH, size);  // ERROR
+        data = new byte[length - HEADER_LENGTH];
+        buffer.get(data);
 
         log.info("Datagram() 4");
     }
 
 
     public int getLength() {
-        return HEADER_LENGTH + data.length;
+        return length;
     }
 
 
     public byte[] getPayload() throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(HEADER_LENGTH + data.length + 1);
+        ByteBuffer buffer = ByteBuffer.allocate(length);
 
         // Order is important
         buffer.putInt(type);
-        buffer.putInt(size);
+        buffer.putInt(length);
         buffer.putLong(sequence);
         buffer.putLong(timestamp);
 

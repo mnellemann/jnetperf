@@ -8,8 +8,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import java.util.concurrent.Callable;
 
-@Command(name = "jperf", mixinStandardHelpOptions = true, version = "checksum 4.0",
-         description = "Java network performance tool.")
+@Command(name = "jperf", mixinStandardHelpOptions = true, version = "0.1",
+         description = "Network performance measurement tool.")
 public class App implements Callable<Integer> {
 
 
@@ -29,8 +29,12 @@ public class App implements Callable<Integer> {
         Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), 64, sequence++);
         udpClient.send(datagram);
 
+        // TODO: Wait for ACK
+
+
         // Data datagrams ...
         for(int i = 0; i < 10; i++) {
+            Thread.sleep(1000);
             datagram = new Datagram(DataType.DATA.getValue(), 64, sequence++);
             udpClient.send(datagram);
         }
@@ -40,6 +44,7 @@ public class App implements Callable<Integer> {
         udpClient.send(datagram);
 
         udpClient.close();
+        Thread.sleep(1000);
 
 
         return 0;
