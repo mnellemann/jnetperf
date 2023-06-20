@@ -17,7 +17,7 @@ public class UdpClient {
     private DatagramSocket socket;
     private InetAddress address;
 
-    private byte[] buf;
+    private byte[] buf = new byte[256];
 
     public UdpClient() throws UnknownHostException, SocketException {
         log.info("UdpClient()");
@@ -26,10 +26,16 @@ public class UdpClient {
     }
 
     public void send(Datagram datagram) throws IOException {
-        DatagramPacket packet = new DatagramPacket(datagram.getPayload(), datagram.getLength(), address, 4445);
+        DatagramPacket packet = new DatagramPacket(datagram.getPayload(), datagram.getRealLength(), address, 4445);
         socket.send(packet);
     }
 
+    public Datagram receive() throws IOException {
+        DatagramPacket packet = new DatagramPacket(buf, buf.length);
+        socket.receive(packet);
+        Datagram datagram = new Datagram(buf);
+        return datagram;
+    }
 
     public String sendEcho(String msg) throws IOException {
         log.info("send() - msg: {}", msg);

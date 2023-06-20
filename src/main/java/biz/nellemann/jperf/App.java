@@ -4,6 +4,8 @@
 package biz.nellemann.jperf;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import java.util.concurrent.Callable;
@@ -12,6 +14,10 @@ import java.util.concurrent.Callable;
          description = "Network performance measurement tool.")
 public class App implements Callable<Integer> {
 
+    final Logger log = LoggerFactory.getLogger(App.class);
+
+    @CommandLine.Option(names = { "-s", "--size" }, paramLabel = "SIZE", description = "the datagram size")
+    int size = 1500;
 
     @Override
     public Integer call() throws Exception { // your business logic goes here...
@@ -20,31 +26,39 @@ public class App implements Callable<Integer> {
         UdpServer udpServer = new UdpServer();
         udpServer.start();
 
-        int sequence = 0;
+
+        long sequence = 0;
+
 
         // Start client and send some messages
         UdpClient udpClient = new UdpClient();
 
         // Start datagram
-        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), 64, sequence++);
+        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), size, sequence++);
         udpClient.send(datagram);
+        Thread.sleep(100);
 
         // TODO: Wait for ACK
+        datagram = udpClient.receive();
+        if(datagram.getType() != DataType.ACK.getValue()) {
+            log.warn("No ACK!");
+            return -1;
+        }
 
 
         // Data datagrams ...
-        for(int i = 0; i < 10; i++) {
-            Thread.sleep(1000);
-            datagram = new Datagram(DataType.DATA.getValue(), 64, sequence++);
+        for(int i = 0; i < 100; i++) {
+            datagram = new Datagram(DataType.DATA.getValue(), size, sequence++);
             udpClient.send(datagram);
+            //Thread.sleep(50);
         }
 
         // End datagram
-        datagram = new Datagram(DataType.END.getValue(), 64, sequence++);
+        Thread.sleep(500);
+        datagram = new Datagram(DataType.END.getValue(), size, sequence++);
         udpClient.send(datagram);
 
         udpClient.close();
-        Thread.sleep(1000);
 
 
         return 0;
