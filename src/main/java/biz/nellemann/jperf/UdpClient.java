@@ -14,39 +14,40 @@ public class UdpClient {
 
     final Logger log = LoggerFactory.getLogger(UdpClient.class);
 
+    private final int port;
+    private final InetAddress address;
+
     private DatagramSocket socket;
-    private InetAddress address;
 
     private byte[] buf = new byte[256];
 
-    public UdpClient() throws UnknownHostException, SocketException {
-        log.info("UdpClient()");
+    public UdpClient(String hostname, int port) throws UnknownHostException, SocketException {
+        log.info("UdpClient() - target: {}, port: {}", hostname, port);
+        this.port = port;
         socket = new DatagramSocket();
-        address = InetAddress.getByName("localhost");
+        address = InetAddress.getByName(hostname);
     }
 
     public void send(Datagram datagram) throws IOException {
-        DatagramPacket packet = new DatagramPacket(datagram.getPayload(), datagram.getRealLength(), address, 4445);
+        DatagramPacket packet = new DatagramPacket(datagram.getPayload(), datagram.getRealLength(), address, port);
         socket.send(packet);
     }
 
     public Datagram receive() throws IOException {
         DatagramPacket packet = new DatagramPacket(buf, buf.length);
         socket.receive(packet);
-        Datagram datagram = new Datagram(buf);
-        return datagram;
+        return new Datagram(buf);
     }
 
     public String sendEcho(String msg) throws IOException {
         log.info("send() - msg: {}", msg);
 
         buf = msg.getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, address, 4445);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, address, port);
         socket.send(packet);
         packet = new DatagramPacket(buf, buf.length);
         socket.receive(packet);
-        String received = new String( packet.getData(), 0, packet.getLength() );
-        return received;
+        return new String( packet.getData(), 0, packet.getLength() );
     }
 
     public void close() {

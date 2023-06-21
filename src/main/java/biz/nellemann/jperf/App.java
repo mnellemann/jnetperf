@@ -16,14 +16,22 @@ public class App implements Callable<Integer> {
 
     final Logger log = LoggerFactory.getLogger(App.class);
 
-    @CommandLine.Option(names = { "-s", "--size" }, paramLabel = "SIZE", description = "the datagram size")
-    int size = 1500;
+    @CommandLine.Option(names = { "-s", "--pkt-size" }, paramLabel = "SIZE", description = "datagram size")
+    int packetSize = 1500;
+
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "datagrams to send")
+    int packetCount = 100;
+
+    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "network port")
+    int port = 4445;
+
+
 
     @Override
     public Integer call() throws Exception { // your business logic goes here...
 
         // Start server
-        UdpServer udpServer = new UdpServer();
+        UdpServer udpServer = new UdpServer(port);
         udpServer.start();
 
 
@@ -31,10 +39,10 @@ public class App implements Callable<Integer> {
 
 
         // Start client and send some messages
-        UdpClient udpClient = new UdpClient();
+        UdpClient udpClient = new UdpClient("localhost", port);
 
         // Start datagram
-        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), size, sequence++);
+        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), packetSize, sequence++);
         udpClient.send(datagram);
         Thread.sleep(100);
 
@@ -47,19 +55,19 @@ public class App implements Callable<Integer> {
 
 
         // Data datagrams ...
-        for(int i = 0; i < 100; i++) {
-            datagram = new Datagram(DataType.DATA.getValue(), size, sequence++);
+        for(int i = 0; i < packetCount; i++) {
+            datagram = new Datagram(DataType.DATA.getValue(), packetSize, sequence++);
             udpClient.send(datagram);
             //Thread.sleep(50);
         }
 
         // End datagram
         Thread.sleep(500);
-        datagram = new Datagram(DataType.END.getValue(), size, sequence++);
+        datagram = new Datagram(DataType.END.getValue(), packetSize, sequence++);
         udpClient.send(datagram);
 
         udpClient.close();
-
+        Thread.sleep(1500);
 
         return 0;
     }

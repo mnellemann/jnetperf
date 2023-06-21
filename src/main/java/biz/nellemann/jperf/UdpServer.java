@@ -18,9 +18,9 @@ public class UdpServer extends Thread {
     private boolean running;
     private byte[] buf = new byte[256];
 
-    public UdpServer() throws SocketException {
-        log.info("UdpServer()");
-        socket = new DatagramSocket(4445);
+    public UdpServer(int port) throws SocketException {
+        log.info("UdpServer() - port: {}", port);
+        socket = new DatagramSocket(port);
     }
 
     public void run() {
@@ -45,7 +45,7 @@ public class UdpServer extends Thread {
                 thisSequence = datagram.getSequence();
 
                 if(datagram.getType() == DataType.HANDSHAKE.getValue()) {
-                    log.info("Handshake from ... {}, length: {}", address, datagram.getLength());
+                    log.info("Handshake from ... {}", address);
 
                     // Setup to receive larger datagrams
                     buf = new byte[datagram.getLength()];
@@ -59,8 +59,6 @@ public class UdpServer extends Thread {
 
                 if(datagram.getType() == DataType.END.getValue()) {
                     running = false;
-                    log.info("Stopping ....");
-                    // TODO: Reset ?
                 }
 
                 if(datagram.getType() == DataType.DATA.getValue()) {
@@ -71,10 +69,7 @@ public class UdpServer extends Thread {
                     }
                 }
 
-
                 lastSequence = thisSequence;
-
-
             }
 
             socket.close();

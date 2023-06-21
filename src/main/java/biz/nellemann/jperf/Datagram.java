@@ -12,9 +12,9 @@ import org.slf4j.LoggerFactory;
  *
  * Datagram consists of the following
  * <p>
- * <------------------------- HEADER 32 bytes ------------------->  <---------- DATA min 32 bytes -------->
- *      _long      _int     _int      _long       _long
- *     8_bytes   4_bytes   4_bytes   8_bytes     8_bytes
+ * <------------------------- HEADER 32 bytes -------------->  <---------- DATA min 32 bytes -------->
+ *      _long      _int     _int       _long     _long
+ *     8_bytes   4_bytes   4_bytes    8_bytes   8_bytes
  *    MAGIC-ID     TYPE    LENGTH    SEQUENCE  TIMESTAMP
  *
  */
