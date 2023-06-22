@@ -8,6 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+
+import java.io.IOException;
+import java.net.SocketException;
 import java.util.concurrent.Callable;
 
 @Command(name = "jperf", mixinStandardHelpOptions = true, version = "0.1",
@@ -16,33 +19,62 @@ public class App implements Callable<Integer> {
 
     final Logger log = LoggerFactory.getLogger(App.class);
 
-    @CommandLine.Option(names = { "-s", "--pkt-size" }, paramLabel = "SIZE", description = "datagram size")
-    int packetSize = 1500;
 
-    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "datagrams to send")
-    int packetCount = 100;
+    @CommandLine.Option(names = { "-c", "--connect" }, paramLabel = "SERVER", description = "run client and connect to remote server")
+    String remoteServer;
+
+    @CommandLine.Option(names = { "-s", "--server" }, description = "run server and wait for client")
+    boolean runServer = false;
+
+    @CommandLine.Option(names = { "-l", "--pkt-size" }, paramLabel = "SIZE", description = "datagram size in bytes, max 65507")
+    //int packetSize = 16384; // Min: 256  Max: 65507
+    int packetSize = 65507; // Min: 256  Max: 65507
+
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "number of packets to send")
+    int packetCount = 5000;
 
     @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "network port")
     int port = 4445;
+
+    @CommandLine.Option(names = { "-w", "--send-wait" }, paramLabel = "MILLISEC", description = "delay in millis between sending packets")
+    long sendWait = 3;
 
 
 
     @Override
     public Integer call() throws Exception { // your business logic goes here...
 
-        // Start server
-        UdpServer udpServer = new UdpServer(port);
-        udpServer.start();
+        if(runServer) {
+            runServer();
+        }
+
+        if(remoteServer != null) {
+            runClient(remoteServer);
+        }
 
 
+        //udpServer.printSummary();
+        return 0;
+    }
+
+
+    // this example implements Callable, so parsing, error handling and handling user
+    // requests for usage help or version help can be done with one line of code.
+    public static void main(String... args) {
+        int exitCode = new CommandLine(new App()).execute(args);
+        System.exit(exitCode);
+    }
+
+
+
+    private void runClient(String remoteHost) throws InterruptedException, IOException {
         long sequence = 0;
 
-
         // Start client and send some messages
-        UdpClient udpClient = new UdpClient("localhost", port);
+        UdpClient udpClient = new UdpClient(remoteHost, port);
 
         // Start datagram
-        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), packetSize, sequence++);
+        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), packetSize, sequence++, packetCount);
         udpClient.send(datagram);
         Thread.sleep(100);
 
@@ -50,33 +82,40 @@ public class App implements Callable<Integer> {
         datagram = udpClient.receive();
         if(datagram.getType() != DataType.ACK.getValue()) {
             log.warn("No ACK!");
-            return -1;
+            return;
         }
-
 
         // Data datagrams ...
         for(int i = 0; i < packetCount; i++) {
-            datagram = new Datagram(DataType.DATA.getValue(), packetSize, sequence++);
+            datagram = new Datagram(DataType.DATA.getValue(), packetSize, sequence++, packetCount);
             udpClient.send(datagram);
-            //Thread.sleep(50);
+            Thread.sleep(sendWait);
         }
 
         // End datagram
-        Thread.sleep(500);
-        datagram = new Datagram(DataType.END.getValue(), packetSize, sequence++);
+        Thread.sleep(100);
+        datagram = new Datagram(DataType.END.getValue(), packetSize, sequence++, packetCount);
         udpClient.send(datagram);
 
-        udpClient.close();
-        Thread.sleep(1500);
+        // TODO: Wait for ACK
+        datagram = udpClient.receive();
+        if(datagram.getType() != DataType.ACK.getValue()) {
+            log.warn("No ACK!");
+            return;
+        }
 
-        return 0;
+
+        udpClient.close();
+        Thread.sleep(1000);
+
+        udpClient.printStatistics();
     }
 
-    // this example implements Callable, so parsing, error handling and handling user
-    // requests for usage help or version help can be done with one line of code.
-    public static void main(String... args) {
-        int exitCode = new CommandLine(new App()).execute(args);
-        System.exit(exitCode);
+    private void runServer() throws SocketException, InterruptedException {
+        // Start server
+        UdpServer udpServer = new UdpServer(port);
+        udpServer.start();
+        udpServer.join();
     }
 
 }

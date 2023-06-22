@@ -6,6 +6,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,10 +17,12 @@ public class UdpClient {
 
     private final int port;
     private final InetAddress address;
-
-    private DatagramSocket socket;
+    private final DatagramSocket socket;
 
     private byte[] buf = new byte[256];
+    private long packetsSent = 0;
+    private long bytesSent = 0;
+
 
     public UdpClient(String hostname, int port) throws UnknownHostException, SocketException {
         log.info("UdpClient() - target: {}, port: {}", hostname, port);
@@ -31,6 +34,8 @@ public class UdpClient {
     public void send(Datagram datagram) throws IOException {
         DatagramPacket packet = new DatagramPacket(datagram.getPayload(), datagram.getRealLength(), address, port);
         socket.send(packet);
+        packetsSent++;
+        bytesSent += datagram.getRealLength();
     }
 
     public Datagram receive() throws IOException {
@@ -54,4 +59,7 @@ public class UdpClient {
         socket.close();
     }
 
+    public void printStatistics() {
+        System.out.printf("%s sent: %d pkts\t %d B\t %d KB\t %d MB\n", Instant.now().toString(), packetsSent, bytesSent, bytesSent/1000, bytesSent/1_000_000);
+    }
 }

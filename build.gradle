@@ -7,15 +7,15 @@
  */
 
 plugins {
-    // Apply the groovy plugin to also add support for Groovy (needed for Spock)
+    id 'java'
     id 'groovy'
-
-    // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
+    id "com.github.johnrengelman.shadow" version "7.1.2"
+    id "net.nemerosa.versioning" version "2.15.1"
+    id "com.netflix.nebula.ospackage" version "11.2.0"
 }
 
 repositories {
-    // Use Maven Central for resolving dependencies.
     mavenCentral()
 }
 
@@ -45,4 +45,57 @@ application {
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+
+jar {
+    manifest {
+        attributes(
+                'Created-By'     : "Gradle ${gradle.gradleVersion}",
+                'Build-OS'       : "${System.properties['os.name']} ${System.properties['os.arch']} ${System.properties['os.version']}",
+                'Build-Jdk'      : "${System.properties['java.version']} (${System.properties['java.vendor']} ${System.properties['java.vm.version']})",
+                'Build-User'     : System.properties['user.name'],
+                'Build-Version'  : versioning.info.tag ?: (versioning.info.branch + "-" + versioning.info.build),
+                'Build-Revision' : versioning.info.commit,
+                'Build-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSSZ").toString(),
+        )
+    }
+}
+
+apply plugin: 'com.netflix.nebula.ospackage'
+ospackage {
+    packageName = 'jperf'
+    release = '1'
+    user = 'root'
+    packager = "Mark Nellemann <mark.nellemann@gmail.com>"
+
+    into '/opt/jperf'
+
+    from(shadowJar.outputs.files) {
+        into 'lib'
+    }
+
+    from('build/scriptsShadow') {
+        into 'bin'
+    }
+
+    from(['README.md', 'LICENSE']) {
+        into 'doc'
+    }
+
+}
+
+buildDeb {
+    dependsOn build, startShadowScripts
+}
+
+buildRpm {
+    dependsOn build, startShadowScripts
+    os = org.redline_rpm.header.Os.LINUX
+}
+
+tasks.register("packages") {
+    group "build"
+    dependsOn ":buildDeb"
+    dependsOn ":buildRpm"
 }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +16,15 @@ import org.slf4j.LoggerFactory;
  * <------------------------- HEADER 32 bytes -------------->  <---------- DATA min 32 bytes -------->
  *      _long      _int     _int       _long     _long
  *     8_bytes   4_bytes   4_bytes    8_bytes   8_bytes
- *    MAGIC-ID     TYPE    LENGTH    SEQUENCE  TIMESTAMP
+ *    MAGIC-ID     TYPE    LENGTH     CUR_PKT    MAX_PKT
  *
  */
 
 public class Datagram {
 
     final Logger log = LoggerFactory.getLogger(Datagram.class);
+
+    private final Random random = new Random();
 
     private final int HEADER_LENGTH = 32;
 
@@ -30,8 +33,8 @@ public class Datagram {
     private final int type;
     private final int length;
     private final int realLength;
-    private final long sequence;
-    private final long timestamp;
+    private final long curPkt;
+    private final long maxPkt;
     private final byte[] data;
 
 
@@ -39,16 +42,16 @@ public class Datagram {
      * Create new empty datagram
      * @param type
      * @param length
-     * @param sequence
+     * @param currentPkt
      */
-    public Datagram(int type, int length, long sequence) {
+    public Datagram(int type, int length, long currentPkt, long maxPkt) {
 
-        log.debug("Datagram() - of type: {}, length: {}, sequence: {}", type, length, sequence);
+        log.debug("Datagram() - of type: {}, length: {}, sequence: {}", type, length, currentPkt, maxPkt);
 
         this.type = type;
         this.length = length;
-        this.sequence = sequence;
-        this.timestamp = System.currentTimeMillis();
+        this.curPkt = currentPkt;
+        this.maxPkt = maxPkt;
 
         if(type == DataType.DATA.getValue()) {
             realLength = length;
@@ -57,6 +60,8 @@ public class Datagram {
             realLength = HEADER_LENGTH * 2;
             data = new byte[HEADER_LENGTH * 2];
         }
+
+        //random.nextBytes(data);
     }
 
 
@@ -80,8 +85,8 @@ public class Datagram {
         // Order is importent when assembling header fields like this
         type = buffer.getInt();
         length = buffer.getInt();
-        sequence = buffer.getLong();
-        timestamp = buffer.getLong();
+        curPkt = buffer.getLong();
+        maxPkt = buffer.getLong();
 
         realLength = length;
         if(type == DataType.DATA.getValue()) {
@@ -103,15 +108,15 @@ public class Datagram {
 
     public byte[] getPayload() throws IOException {
 
-        log.debug("getPayload() - with type: {}, length: {}, sequence: {}", type, length, sequence);
+        log.debug("getPayload() - with type: {}, length: {}, sequence: {}", type, length, curPkt);
         ByteBuffer buffer = ByteBuffer.allocate(data.length + HEADER_LENGTH);
 
         // Order is important
         buffer.put(MAGIC_ID);
         buffer.putInt(type);
         buffer.putInt(length);
-        buffer.putLong(sequence);
-        buffer.putLong(timestamp);
+        buffer.putLong(curPkt);
+        buffer.putLong(maxPkt);
 
         buffer.put(data);
 
@@ -124,8 +129,12 @@ public class Datagram {
     }
 
 
-    public long getSequence() {
-        return sequence;
+    public long getCurPkt() {
+        return curPkt;
+    }
+
+    public long getMaxPkt() {
+        return maxPkt;
     }
 
 
