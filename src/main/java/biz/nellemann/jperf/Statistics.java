@@ -27,6 +27,8 @@ public class Statistics {
             packesPerSec = packetsTransferred;
             timestamp1 = timestamp2;
             print();
+            bytesTransferred = 0;
+            packetsTransferred = 0;
         }
 
     }
