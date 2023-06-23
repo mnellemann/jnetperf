@@ -26,18 +26,15 @@ public class App implements Callable<Integer> {
     @CommandLine.Option(names = { "-s", "--server" }, description = "run server and wait for client")
     boolean runServer = false;
 
-    @CommandLine.Option(names = { "-l", "--pkt-size" }, paramLabel = "SIZE", description = "datagram size in bytes, max 65507")
+    @CommandLine.Option(names = { "-l", "--pkt-size" }, paramLabel = "SIZE", description = "datagram size in bytes, max 65507 [default: ${DEFAULT-VALUE}]")
     //int packetSize = 16384; // Min: 256  Max: 65507
     int packetSize = 65507; // Min: 256  Max: 65507
 
-    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "number of packets to send")
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "number of packets to send [default: ${DEFAULT-VALUE}]")
     int packetCount = 5000;
 
-    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "network port")
+    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "network port [default: ${DEFAULT-VALUE}]")
     int port = 4445;
-
-    @CommandLine.Option(names = { "-w", "--send-wait" }, paramLabel = "MILLISEC", description = "delay in millis between sending packets")
-    long sendWait = 3;
 
 
 
@@ -52,14 +49,10 @@ public class App implements Callable<Integer> {
             runClient(remoteServer);
         }
 
-
-        //udpServer.printSummary();
         return 0;
     }
 
 
-    // this example implements Callable, so parsing, error handling and handling user
-    // requests for usage help or version help can be done with one line of code.
     public static void main(String... args) {
         int exitCode = new CommandLine(new App()).execute(args);
         System.exit(exitCode);
@@ -68,51 +61,12 @@ public class App implements Callable<Integer> {
 
 
     private void runClient(String remoteHost) throws InterruptedException, IOException {
-        long sequence = 0;
-
-        // Start client and send some messages
-        UdpClient udpClient = new UdpClient(remoteHost, port);
-
-        // Start datagram
-        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), packetSize, sequence++, packetCount);
-        udpClient.send(datagram);
-        Thread.sleep(100);
-
-        // TODO: Wait for ACK
-        datagram = udpClient.receive();
-        if(datagram.getType() != DataType.ACK.getValue()) {
-            log.warn("No ACK!");
-            return;
-        }
-
-        // Data datagrams ...
-        for(int i = 0; i < packetCount; i++) {
-            datagram = new Datagram(DataType.DATA.getValue(), packetSize, sequence++, packetCount);
-            udpClient.send(datagram);
-            Thread.sleep(sendWait);
-        }
-
-        // End datagram
-        Thread.sleep(100);
-        datagram = new Datagram(DataType.END.getValue(), packetSize, sequence++, packetCount);
-        udpClient.send(datagram);
-
-        // TODO: Wait for ACK
-        datagram = udpClient.receive();
-        if(datagram.getType() != DataType.ACK.getValue()) {
-            log.warn("No ACK!");
-            return;
-        }
-
-
-        udpClient.close();
-        Thread.sleep(1000);
-
-        udpClient.printStatistics();
+        UdpClient udpClient = new UdpClient(remoteHost, port, packetCount, packetSize);
+        udpClient.start();
     }
 
+
     private void runServer() throws SocketException, InterruptedException {
-        // Start server
         UdpServer udpServer = new UdpServer(port);
         udpServer.start();
         udpServer.join();

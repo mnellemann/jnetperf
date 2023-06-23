@@ -15,6 +15,8 @@ public class UdpClient {
 
     final Logger log = LoggerFactory.getLogger(UdpClient.class);
 
+    private Statistics statistics;
+
     private final int port;
     private final InetAddress address;
     private final DatagramSocket socket;
@@ -23,43 +25,81 @@ public class UdpClient {
     private long packetsSent = 0;
     private long bytesSent = 0;
 
+    private int packetCount;
+    private int packetSize;
 
-    public UdpClient(String hostname, int port) throws UnknownHostException, SocketException {
+
+    public UdpClient(String hostname, int port, int packets, int size) throws UnknownHostException, SocketException {
         log.info("UdpClient() - target: {}, port: {}", hostname, port);
         this.port = port;
         socket = new DatagramSocket();
         address = InetAddress.getByName(hostname);
+        this.packetCount = packets;
+        this.packetSize = size;
+        statistics = new Statistics();
     }
 
-    public void send(Datagram datagram) throws IOException {
+    private void send(Datagram datagram) throws IOException {
         DatagramPacket packet = new DatagramPacket(datagram.getPayload(), datagram.getRealLength(), address, port);
         socket.send(packet);
-        packetsSent++;
-        bytesSent += datagram.getRealLength();
+        statistics.transferPacket();
+        statistics.transferBytes(datagram.getRealLength());
     }
 
-    public Datagram receive() throws IOException {
+    private Datagram receive() throws IOException {
         DatagramPacket packet = new DatagramPacket(buf, buf.length);
         socket.receive(packet);
         return new Datagram(buf);
     }
 
-    public String sendEcho(String msg) throws IOException {
-        log.info("send() - msg: {}", msg);
 
-        buf = msg.getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, address, port);
-        socket.send(packet);
-        packet = new DatagramPacket(buf, buf.length);
-        socket.receive(packet);
-        return new String( packet.getData(), 0, packet.getLength() );
-    }
-
-    public void close() {
+    private void close() {
         socket.close();
     }
 
-    public void printStatistics() {
-        System.out.printf("%s sent: %d pkts\t %d B\t %d KB\t %d MB\n", Instant.now().toString(), packetsSent, bytesSent, bytesSent/1000, bytesSent/1_000_000);
+
+    public void start() throws IOException, InterruptedException {
+
+        long sequence = 0;
+
+        // Start datagram
+        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), packetSize, sequence++, packetCount);
+        send(datagram);
+
+        // TODO: Wait for ACK
+        datagram = receive();
+        if(datagram.getType() != DataType.ACK.getValue()) {
+            log.warn("No ACK!");
+            return;
+        }
+
+        // Data datagrams ...
+        for(int i = 0; i < packetCount; i++) {
+            datagram = new Datagram(DataType.DATA.getValue(), packetSize, sequence++, packetCount);
+            send(datagram);
+            datagram = receive();
+            if(datagram.getType() != DataType.ACK.getValue()) {
+                log.warn("No ACK!");
+            }
+            statistics.tick();
+        }
+
+        // End datagram
+        //Thread.sleep(100);
+        datagram = new Datagram(DataType.END.getValue(), packetSize, sequence++, packetCount);
+        send(datagram);
+
+        // TODO: Wait for ACK
+        datagram = receive();
+        statistics.ack();
+        if(datagram.getType() != DataType.ACK.getValue()) {
+            log.warn("No ACK!");
+            return;
+        }
+
+        Thread.sleep(100);
+        close();
+        statistics.summary();
     }
+
 }

@@ -5,8 +5,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.time.Duration;
-import java.time.Instant;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,13 +13,9 @@ public class UdpServer extends Thread {
 
     final Logger log = LoggerFactory.getLogger(UdpServer.class);
 
-
     private final DatagramSocket socket;
     private byte[] buf = new byte[256];
 
-    long pktsReceived, pktsReceivedTotal = 0;
-    long bytesReceived, bytesReceivedTotal = 0;
-    long bytesPerSec, pktsPerSec = 0;
 
     public UdpServer(int port) throws SocketException {
         log.info("UdpServer()");
@@ -46,29 +40,11 @@ public class UdpServer extends Thread {
     }
 
 
-    public void printStatistics() {
-        // Because we do this every second ...
-        bytesPerSec = bytesReceived;
-        pktsPerSec = pktsReceived;
-
-        System.out.printf("%s recv: %d pkt/s\t %d B/s\t %d KB/s\t %d MB/s\n", Instant.now().toString(), pktsPerSec, bytesPerSec, bytesPerSec/1_000, bytesPerSec/1_000_000);
-        pktsReceived = 0;
-        bytesReceived = 0;
-    }
-
-    public void printSummary() {
-        System.out.printf("%s recv: %d pkts\t %d B\t %d KB\t %d MB\n", Instant.now().toString(), pktsReceivedTotal, bytesReceivedTotal, bytesReceivedTotal/1_000, bytesReceivedTotal/1_000_000);
-    }
-
-
     public void session() throws IOException {
 
+        Statistics statistics = new Statistics();
         boolean running = true;
-
         boolean ackEnd = false;
-        long thisSequence, lastSequence = 0;
-        Instant startInstant = Instant.now();
-        Instant checkInstant;
 
         while (running) {
 
@@ -79,60 +55,38 @@ public class UdpServer extends Thread {
             int port = packet.getPort();
 
             Datagram datagram = new Datagram(buf);
-            thisSequence = datagram.getCurPkt();
-
+            statistics.transferPacket();
+            statistics.transferBytes(datagram.getRealLength());
 
             if(datagram.getType() == DataType.HANDSHAKE.getValue()) {
                 log.info("Handshake from ... {}, length: {}", address, datagram.getLength());
-
                 // Setup to receive larger datagrams
                 buf = new byte[datagram.getLength()];
-
-                // Send ACK
-                Datagram responseDatagram = new Datagram(DataType.ACK.getValue(), 32, datagram.getCurPkt(), 1);
-                packet = new DatagramPacket(responseDatagram.getPayload(), responseDatagram.getLength(), address, port);
-                socket.send(packet);
-
+                statistics.reset();
             }
 
+            /*
             if(datagram.getType() == DataType.DATA.getValue()) {
-                bytesReceived += datagram.getLength();
-                bytesReceivedTotal += datagram.getLength();
-
-                if(thisSequence == lastSequence + 1) {
-                    //log.info("Data .... size: {}, sequence: {}", datagram.getLength(), thisSequence);
-                } else {
-                    //log.warn("Data .... out of sequence: {} vs {}", thisSequence, lastSequence);
-                }
-            }
-
+                bytesReceived += datagram.getRealLength();
+                bytesReceivedTotal += datagram.getRealLength();
+            }*/
 
             if(datagram.getType() == DataType.END.getValue()) {
                 ackEnd = true;
             }
 
+            // Send ACK
+            Datagram responseDatagram = new Datagram(DataType.ACK.getValue(), 32, datagram.getCurPkt(), 1);
+            packet = new DatagramPacket(responseDatagram.getPayload(), responseDatagram.getLength(), address, port);
+            socket.send(packet);
+            statistics.ack();
 
-            // Every second
-            checkInstant = Instant.now();
-            if(Duration.between(startInstant, checkInstant).toSeconds() >= 1) {
-                printStatistics();
-                startInstant = checkInstant;
-            }
-
-            if(ackEnd && pktsReceivedTotal > datagram.getMaxPkt()) {
-                // Send ACK
-                Datagram responseDatagram = new Datagram(DataType.ACK.getValue(), 32, datagram.getCurPkt(), 1);
-                packet = new DatagramPacket(responseDatagram.getPayload(), responseDatagram.getLength(), address, port);
-                socket.send(packet);
-
-                printSummary();
+            statistics.tick();
+            if(ackEnd && statistics.getPacketsTransferredTotal() > datagram.getMaxPkt()) {
                 running = false;
+                statistics.summary();
             }
 
-
-            lastSequence = thisSequence;
-            pktsReceived++;
-            pktsReceivedTotal++;
 
         }
 
