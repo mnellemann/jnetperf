@@ -5,7 +5,7 @@ package biz.nellemann.jperf
 
 import spock.lang.Specification
 
-class AppTest extends Specification {
+class ApplicationTest extends Specification {
 
 
 }

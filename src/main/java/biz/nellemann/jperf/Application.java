@@ -15,9 +15,9 @@ import java.util.concurrent.Callable;
 
 @Command(name = "jperf", mixinStandardHelpOptions = true, version = "0.1",
          description = "Network performance measurement tool.")
-public class App implements Callable<Integer> {
+public class Application implements Callable<Integer> {
 
-    final Logger log = LoggerFactory.getLogger(App.class);
+    final Logger log = LoggerFactory.getLogger(Application.class);
 
 
     @CommandLine.Option(names = { "-c", "--connect" }, paramLabel = "SERVER", description = "run client and connect to remote server")
@@ -54,7 +54,7 @@ public class App implements Callable<Integer> {
 
 
     public static void main(String... args) {
-        int exitCode = new CommandLine(new App()).execute(args);
+        int exitCode = new CommandLine(new Application()).execute(args);
         System.exit(exitCode);
     }
 
