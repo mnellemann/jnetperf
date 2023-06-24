@@ -34,7 +34,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = 'biz.nellemann.jperf.App'
+    mainClass = 'biz.nellemann.jperf.Application'
 }
 
 tasks.named('test') {
