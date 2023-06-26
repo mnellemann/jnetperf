@@ -20,20 +20,24 @@ public class Application implements Callable<Integer> {
     final Logger log = LoggerFactory.getLogger(Application.class);
 
 
-    @CommandLine.Option(names = { "-c", "--connect" }, paramLabel = "SERVER", description = "run client and connect to remote server")
-    String remoteServer;
+    @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
+    RunMode runMode;
 
-    @CommandLine.Option(names = { "-s", "--server" }, description = "run server and wait for client")
-    boolean runServer = false;
+    static class RunMode {
+        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server", paramLabel = "HOST")
+        String remoteServer;
 
-    @CommandLine.Option(names = { "-l", "--pkt-size" }, paramLabel = "SIZE", description = "datagram size in bytes, max 65507 [default: ${DEFAULT-VALUE}]")
-    //int packetSize = 16384; // Min: 256  Max: 65507
+        @CommandLine.Option(names = { "-s", "--server" }, required = true, description = "Run server and wait for client")
+        boolean runServer = false;
+    }
+
+    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "SIZE", description = "Datagram size in bytes, max 65507 [default: ${DEFAULT-VALUE}]")
     int packetSize = 65507; // Min: 256  Max: 65507
 
-    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "number of packets to send [default: ${DEFAULT-VALUE}]")
-    int packetCount = 5000;
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}]")
+    int packetCount = 150_000;
 
-    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "network port [default: ${DEFAULT-VALUE}]")
+    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "Network port [default: ${DEFAULT-VALUE}]")
     int port = 4445;
 
 
@@ -41,12 +45,10 @@ public class Application implements Callable<Integer> {
     @Override
     public Integer call() throws Exception { // your business logic goes here...
 
-        if(runServer) {
+        if(runMode.runServer) {
             runServer();
-        }
-
-        if(remoteServer != null) {
-            runClient(remoteServer);
+        } else if(runMode.remoteServer != null) {
+            runClient(runMode.remoteServer);
         }
 
         return 0;

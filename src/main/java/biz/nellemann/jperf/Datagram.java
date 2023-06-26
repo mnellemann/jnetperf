@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  *
  * Datagram consists of the following
  * <p>
- * <------------------------- HEADER 32 bytes -------------->  <---------- DATA min 32 bytes -------->
+ * <------------------------- HEADER 32 bytes -------------->  <---------- DATA bytes min 32, max 65475 -------->
  *      _long      _int     _int       _long     _long
  *     8_bytes   4_bytes   4_bytes    8_bytes   8_bytes
  *    MAGIC-ID     TYPE    LENGTH     CUR_PKT    MAX_PKT
@@ -24,10 +24,7 @@ public class Datagram {
 
     final Logger log = LoggerFactory.getLogger(Datagram.class);
 
-    private final Random random = new Random();
-
     private final int HEADER_LENGTH = 32;
-
     private final byte[] MAGIC_ID = "jPerfTok".getBytes(StandardCharsets.UTF_8);    // Must be 8-bytes
 
     private final int type;

@@ -22,8 +22,6 @@ public class UdpClient {
     private final DatagramSocket socket;
 
     private byte[] buf = new byte[256];
-    private long packetsSent = 0;
-    private long bytesSent = 0;
 
     private int packetCount;
     private int packetSize;
