@@ -99,7 +99,8 @@ public class UdpServer extends Thread {
             statistics.tick();
             if(ackEnd && statistics.getPacketsTransferredTotal() > datagram.getMaxPkt()) {
                 running = false;
-                statistics.summary();
+                statistics.printAverage();
+                statistics.printSummary();
             }
 
 

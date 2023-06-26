@@ -35,19 +35,20 @@ public class UdpClient {
     private final InetAddress address;
     private final DatagramSocket socket;
 
-    private byte[] buf = new byte[256];
-
-    private int packetCount;
-    private int packetSize;
+    private final byte[] buf = new byte[256];
+    private final int packetCount;
+    private final int packetSize;
 
 
     public UdpClient(String hostname, int port, int packets, int size) throws UnknownHostException, SocketException {
         log.info("UdpClient() - target: {}, port: {}", hostname, port);
+
         this.port = port;
-        socket = new DatagramSocket();
-        address = InetAddress.getByName(hostname);
         this.packetCount = packets;
         this.packetSize = size;
+
+        socket = new DatagramSocket();
+        address = InetAddress.getByName(hostname);
         statistics = new Statistics();
     }
 
@@ -74,11 +75,10 @@ public class UdpClient {
 
         long sequence = 0;
 
-        // Start datagram
+        // Send handshake
         Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), packetSize, sequence++, packetCount);
         send(datagram);
 
-        // TODO: Wait for ACK
         datagram = receive();
         if(datagram.getType() != DataType.ACK.getValue()) {
             log.warn("No ACK!");
@@ -111,7 +111,8 @@ public class UdpClient {
 
         Thread.sleep(100);
         close();
-        statistics.summary();
+        statistics.printAverage();
+        statistics.printSummary();
     }
 
 }
