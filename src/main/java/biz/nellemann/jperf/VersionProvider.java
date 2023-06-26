@@ -15,18 +15,20 @@
  */
 package biz.nellemann.jperf;
 
-public enum DataType {
+import picocli.CommandLine;
 
-    HANDSHAKE(1), DATA(2), ACK(4), END(9);
+import java.io.IOException;
+import java.util.jar.Attributes;
+import java.util.jar.Manifest;
 
-    private final int value;
+class VersionProvider implements CommandLine.IVersionProvider {
 
-    private DataType(int value) {
-        this.value = value;
-    }
+    public String[] getVersion() throws IOException {
 
-    public int getValue() {
-        return value;
+        Manifest manifest = new Manifest(getClass().getResourceAsStream("/META-INF/MANIFEST.MF"));
+        Attributes attrs = manifest.getMainAttributes();
+
+        return new String[] { "${COMMAND-FULL-NAME} " + attrs.getValue("Build-Version") };
     }
 
 }
