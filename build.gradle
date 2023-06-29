@@ -32,7 +32,7 @@ java {
 
 
 application {
-    mainClass = 'biz.nellemann.jperf.Application'
+    mainClass = 'biz.nellemann.jnetperf.Application'
 }
 
 tasks.named('test') {
@@ -59,12 +59,12 @@ jar {
 
 apply plugin: 'com.netflix.nebula.ospackage'
 ospackage {
-    packageName = 'jperf'
+    packageName = 'jnetperf'
     release = '1'
     user = 'root'
     packager = "Mark Nellemann <mark.nellemann@gmail.com>"
 
-    into '/opt/jperf'
+    into '/opt/jnetperf'
 
     from(shadowJar.outputs.files) {
         into 'lib'

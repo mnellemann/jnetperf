@@ -4,17 +4,17 @@ Small utility to measure network performance between two hosts.
 
 ## Requirements
 
-You need Java (JRE) version 8 or later to run jperf.
+You need Java (JRE) version 8 or later to run jnetperf.
 
 ## Usage Instructions
 
-- Install the jperf package (*.deb*, *.rpm* or *.jar*) from [downloads](https://bitbucket.org/mnellemann/jperf/downloads/) or compile from source.
-- Run **/opt/jperf/bin/jperf**, if installed from package
-- Or as **java -jar /path/to/jperf.jar**
+- Install the jnetperf package (*.deb*, *.rpm* or *.jar*) from [downloads](https://bitbucket.org/mnellemann/jnetperf/downloads/) or compile from source.
+- Run **/opt/jnetperf/bin/jperf**, if installed from package
+- Or as **java -jar /path/to/jnetperf.jar**
 
 ```shell
-Usage: jperf [-hV] [-l=SIZE] [-n=NUM] [-p=PORT] (-c=HOST | -s)
-Network performance measurement tool.
+Usage: jnetperf [-hV] [-l=SIZE] [-n=NUM] [-p=PORT] (-c=HOST | -s)
+Network Performance Testing.
   -c, --connect=HOST   Connect to remote server
   -h, --help           Show this help message and exit.
   -l, --pkt-len=SIZE   Datagram size in bytes, max 65507 [default: 65507]
@@ -26,7 +26,7 @@ Network performance measurement tool.
 
 ## Development Information
 
-You need Java (JDK) version 8 or later to build jperf.
+You need Java (JDK) version 8 or later to build jnetperf.
 
 ### Build & Test
 

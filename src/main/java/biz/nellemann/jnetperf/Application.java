@@ -13,11 +13,9 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-package biz.nellemann.jperf;
+package biz.nellemann.jnetperf;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -25,11 +23,9 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.concurrent.Callable;
 
-@Command(name = "jperf", mixinStandardHelpOptions = true, versionProvider = VersionProvider.class, description = "Network performance measurement tool.")
+
+@Command(name = "jnetperf", mixinStandardHelpOptions = true, versionProvider = VersionProvider.class, description = "Network Performance Testing.")
 public class Application implements Callable<Integer> {
-
-    final Logger log = LoggerFactory.getLogger(Application.class);
-
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     RunMode runMode;
