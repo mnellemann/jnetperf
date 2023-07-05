@@ -8,7 +8,7 @@ You need Java (JRE) version 8 or later to run jnetperf.
 
 ## Usage Instructions
 
-- Install the jnetperf package (*.deb*, *.rpm* or *.jar*) from [downloads](https://bitbucket.org/mnellemann/jnetperf/downloads/) or compile from source.
+- Install the jnetperf package (*.deb*, *.rpm* or *.jar*) from [Packages](https://git.data.coop/nellemann/jnetperf/packages) or compile from source.
 - Run **/opt/jnetperf/bin/jperf**, if installed from package, or as **java -jar /path/to/jnetperf.jar**
 
 ```shell
@@ -39,12 +39,10 @@ java -jar jnetperf-x.y.z-all.jar -c server-ip
 ```
 
 
-
-
-
 ## Development Information
 
 You need Java (JDK) version 8 or later to build jnetperf.
+
 
 ### Build & Test
 
