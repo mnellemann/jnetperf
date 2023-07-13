@@ -12,14 +12,15 @@ You need Java (JRE) version 8 or later to run jnetperf.
 - Run **/opt/jnetperf/bin/jperf**, if installed from package, or as **java -jar /path/to/jnetperf.jar**
 
 ```shell
-Usage: jnetperf [-hV] [-l=SIZE] [-n=NUM] [-p=PORT] (-c=SERVER | -s)
+Usage: jnetperf [-huV] [-l=SIZE] [-n=NUM] [-p=PORT] (-c=SERVER | -s)
 For more information visit https://git.data.coop/nellemann/jnetperf
   -c, --connect=SERVER   Connect to remote server.
   -h, --help             Show this help message and exit.
-  -l, --pkt-len=SIZE     Datagram size in bytes, max 65507 [default: 65507].
+  -l, --pkt-len=SIZE     Packet size in bytes [default: 1432].
   -n, --pkt-num=NUM      Number of packets to send [default: 150000].
   -p, --port=PORT        Network port [default: 4445].
   -s, --server           Run server and wait for client.
+  -u, --udp              Use UDP network protocol [default: false].
   -V, --version          Print version information and exit.
 ```
 

@@ -40,14 +40,17 @@ public class Application implements Callable<Integer> {
         boolean runServer = false;
     }
 
-    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "SIZE", description = "Datagram size in bytes, max 65507 [default: ${DEFAULT-VALUE}].")
-    int packetSize = 65507; // Min: 256  Max: 65507
+    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "SIZE", description = "Packet size in bytes [default: ${DEFAULT-VALUE}].")
+    int packetSize = Datagram.DEFAULT_LENGTH;
 
     @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}].")
     int packetCount = 150_000;
 
     @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "Network port [default: ${DEFAULT-VALUE}].")
     int port = 4445;
+
+    @CommandLine.Option(names = { "-u", "--udp" }, description = "Use UDP network protocol [default: ${DEFAULT-VALUE}].")
+    boolean useUdp = false;
 
 
 
@@ -72,15 +75,30 @@ public class Application implements Callable<Integer> {
 
 
     private void runClient(String remoteHost) throws InterruptedException, IOException {
-        UdpClient udpClient = new UdpClient(remoteHost, port, packetCount, packetSize);
-        udpClient.start();
+        if(useUdp) {
+            if(packetSize > Datagram.MAX_UDP_LENGTH) {
+                System.err.println("Packet size not allowed for UDP");
+                return;
+            }
+            UdpClient udpClient = new UdpClient(remoteHost, port, packetCount, packetSize);
+            udpClient.start();
+        } else {
+            TcpClient tcpClient = new TcpClient(remoteHost, port, packetCount, packetSize);
+            tcpClient.start();
+        }
     }
 
 
-    private void runServer() throws SocketException, InterruptedException {
-        UdpServer udpServer = new UdpServer(port);
-        udpServer.start();
-        udpServer.join();
+    private void runServer() throws IOException, InterruptedException {
+        if(useUdp) {
+            UdpServer udpServer = new UdpServer(port);
+            udpServer.start();
+            udpServer.join();
+        } else {
+            TcpServer tcpServer = new TcpServer(port);
+            tcpServer.start();
+            tcpServer.join();
+        }
     }
 
 }

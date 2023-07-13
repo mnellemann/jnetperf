@@ -1,41 +1,31 @@
-/*
-   Copyright 2023 mark.nellemann@gmail.com
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
- */
 package biz.nellemann.jnetperf;
-
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class UdpServer extends Thread {
+import java.io.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 
-    final Logger log = LoggerFactory.getLogger(UdpServer.class);
+public class TcpServer extends Thread {
 
-    private final DatagramSocket socket;
+    final Logger log = LoggerFactory.getLogger(TcpServer.class);
+
+    private ServerSocket socket;
+    private DataInputStream in;
+    private DataOutputStream out;
     private byte[] inBuffer;
 
 
-    public UdpServer(int port) throws SocketException {
-        log.info("UdpServer()");
-        socket = new DatagramSocket(port);
+    public TcpServer(int port) throws IOException {
+        log.info("TcpServer()");
+
+        socket = new ServerSocket(port);
+        socket.setSoTimeout(10000);
     }
+
 
     public void run() {
 
@@ -60,15 +50,15 @@ public class UdpServer extends Thread {
         boolean running = true;
         boolean ackEnd = false;
 
+        Socket server = socket.accept();
+        InetAddress address = socket.getInetAddress();
+
+        in = new DataInputStream(server.getInputStream());
+        out = new DataOutputStream(server.getOutputStream());
+
         while (running) {
 
-            DatagramPacket packet = new DatagramPacket(inBuffer, inBuffer.length);
-            socket.receive(packet);
-
-            InetAddress address = packet.getAddress();
-            int port = packet.getPort();
-
-            Datagram datagram = new Datagram(packet.getData());
+            Datagram datagram = receive();
             statistics.transferPacket();
             statistics.transferBytes(datagram.getLength());
 
@@ -85,8 +75,7 @@ public class UdpServer extends Thread {
 
             // Send ACK
             Datagram responseDatagram = new Datagram(DataType.ACK.getValue(), Datagram.DEFAULT_LENGTH, datagram.getCurPkt(), 1);
-            packet = new DatagramPacket(responseDatagram.getPayload(), responseDatagram.getLength(), address, port);
-            socket.send(packet);
+            out.write(responseDatagram.getPayload());
             statistics.ack();
 
             statistics.tick();
@@ -98,7 +87,17 @@ public class UdpServer extends Thread {
 
         }
 
+        in.close();
+        out.close();
+        server.close();
 
+    }
+
+
+    private Datagram receive() throws IOException {
+        in.readFully(inBuffer);
+        Datagram datagram = new Datagram(inBuffer);
+        return datagram;
     }
 
 }
