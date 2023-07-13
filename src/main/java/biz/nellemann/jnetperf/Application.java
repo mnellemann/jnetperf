@@ -24,27 +24,29 @@ import java.net.SocketException;
 import java.util.concurrent.Callable;
 
 
-@Command(name = "jnetperf", mixinStandardHelpOptions = true, versionProvider = VersionProvider.class, description = "Network Performance Testing.")
+@Command(name = "jnetperf", mixinStandardHelpOptions = true,
+    versionProvider = VersionProvider.class,
+    description = "For more information visit https://git.data.coop/nellemann/jnetperf")
 public class Application implements Callable<Integer> {
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "1")
     RunMode runMode;
 
     static class RunMode {
-        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server", paramLabel = "HOST")
+        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server.", paramLabel = "SERVER")
         String remoteServer;
 
-        @CommandLine.Option(names = { "-s", "--server" }, required = true, description = "Run server and wait for client")
+        @CommandLine.Option(names = { "-s", "--server" }, required = true, description = "Run server and wait for client.")
         boolean runServer = false;
     }
 
-    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "SIZE", description = "Datagram size in bytes, max 65507 [default: ${DEFAULT-VALUE}]")
+    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "SIZE", description = "Datagram size in bytes, max 65507 [default: ${DEFAULT-VALUE}].")
     int packetSize = 65507; // Min: 256  Max: 65507
 
-    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}]")
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}].")
     int packetCount = 150_000;
 
-    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "Network port [default: ${DEFAULT-VALUE}]")
+    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "Network port [default: ${DEFAULT-VALUE}].")
     int port = 4445;
 
 
