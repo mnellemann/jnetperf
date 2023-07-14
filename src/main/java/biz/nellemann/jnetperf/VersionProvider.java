@@ -28,7 +28,9 @@ class VersionProvider implements CommandLine.IVersionProvider {
         Manifest manifest = new Manifest(getClass().getResourceAsStream("/META-INF/MANIFEST.MF"));
         Attributes attrs = manifest.getMainAttributes();
 
-        return new String[] { "${COMMAND-FULL-NAME} " + attrs.getValue("Build-Version") };
+        return new String[] {
+                "${COMMAND-FULL-NAME} " + attrs.getValue("Build-Version") + " (on ${os.name} ${os.version} ${os.arch})",
+                "JVM: ${java.version} (${java.vendor} ${java.vm.name} ${java.vm.version})" };
     }
 
 }

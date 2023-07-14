@@ -20,7 +20,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.util.concurrent.Callable;
 
 
@@ -33,21 +32,24 @@ public class Application implements Callable<Integer> {
     RunMode runMode;
 
     static class RunMode {
-        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server.", paramLabel = "SERVER")
+        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server.", paramLabel = "HOST")
         String remoteServer;
 
         @CommandLine.Option(names = { "-s", "--server" }, required = true, description = "Run server and wait for client.")
         boolean runServer = false;
     }
 
-    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "SIZE", description = "Datagram size in bytes, max 65507 [default: ${DEFAULT-VALUE}].")
-    int packetSize = 65507; // Min: 256  Max: 65507
+    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "NUM", description = "Packet size in bytes [default: ${DEFAULT-VALUE}].", converter = SuffixConverter.class)
+    int packetSize = Payload.DEFAULT_LENGTH;
 
-    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}].")
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}].", converter = SuffixConverter.class)
     int packetCount = 150_000;
 
     @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "Network port [default: ${DEFAULT-VALUE}].")
     int port = 4445;
+
+    @CommandLine.Option(names = { "-u", "--udp" }, description = "Use UDP network protocol [default: ${DEFAULT-VALUE}].")
+    boolean useUdp = false;
 
 
 
@@ -72,15 +74,35 @@ public class Application implements Callable<Integer> {
 
 
     private void runClient(String remoteHost) throws InterruptedException, IOException {
-        UdpClient udpClient = new UdpClient(remoteHost, port, packetCount, packetSize);
-        udpClient.start();
+
+        if(packetSize < Payload.MIN_LENGTH) {
+            packetSize = Payload.MIN_LENGTH;
+        }
+
+        if(useUdp) {
+            if(packetSize > Payload.MAX_UDP_LENGTH) {
+                packetSize = Payload.MAX_UDP_LENGTH;
+            }
+            UdpClient udpClient = new UdpClient(remoteHost, port, packetSize, packetCount, 0);
+            udpClient.start();
+
+        } else {
+            TcpClient tcpClient = new TcpClient(remoteHost, port, packetSize, packetCount, 0);
+            tcpClient.start();
+        }
     }
 
 
-    private void runServer() throws SocketException, InterruptedException {
-        UdpServer udpServer = new UdpServer(port);
-        udpServer.start();
-        udpServer.join();
+    private void runServer() throws IOException, InterruptedException {
+        if(useUdp) {
+            UdpServer udpServer = new UdpServer(port);
+            udpServer.start();
+            udpServer.join();
+        } else {
+            TcpServer tcpServer = new TcpServer(port);
+            tcpServer.start();
+            tcpServer.join();
+        }
     }
 
 }
