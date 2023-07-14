@@ -92,7 +92,6 @@ public class Application implements Callable<Integer> {
 
         if(useUdp) {
             if(packetSize > Payload.MAX_UDP_LENGTH) {
-                System.err.println("Packetsize > MAX UDP: " + packetSize);
                 packetSize = Payload.MAX_UDP_LENGTH;
             }
             UdpClient udpClient = new UdpClient(remoteHost, port, packetSize, packetCount, timeInSeconds);
