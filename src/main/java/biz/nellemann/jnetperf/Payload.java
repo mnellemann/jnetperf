@@ -15,13 +15,10 @@
  */
 package biz.nellemann.jnetperf;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -34,16 +31,17 @@ import org.slf4j.LoggerFactory;
  *
  */
 
-public class Datagram {
+public class Payload {
 
-    final Logger log = LoggerFactory.getLogger(Datagram.class);
+    public final static int MIN_LENGTH = 64;
+    public final static int MAX_UDP_LENGTH = 65507;
+    public final static int DEFAULT_LENGTH = 1432;
+    public final static int HEADER_LENGTH = 32;
 
-    private final int HEADER_LENGTH = 32;
     private final byte[] MAGIC_ID = "jPerfTok".getBytes(StandardCharsets.UTF_8);    // Must be 8-bytes
 
     private final int type;
     private final int length;
-    private final int realLength;
     private final long curPkt;
     private final long maxPkt;
     private final byte[] data;
@@ -55,71 +53,59 @@ public class Datagram {
      * @param length
      * @param currentPkt
      */
-    public Datagram(int type, int length, long currentPkt, long maxPkt) {
-
-        log.debug("Datagram() - of type: {}, length: {}, sequence: {}", type, length, currentPkt, maxPkt);
-
+    public Payload(int type, int length, long currentPkt, long maxPkt) {
         this.type = type;
-        this.length = length;
         this.curPkt = currentPkt;
         this.maxPkt = maxPkt;
+        this.length = length;
 
-        if(type == DataType.DATA.getValue()) {
-            realLength = length;
-            data = new byte[length - HEADER_LENGTH];
+        if (type == PayloadType.HANDSHAKE.getValue()) {
+            data = new byte[DEFAULT_LENGTH - HEADER_LENGTH];
         } else {
-            realLength = HEADER_LENGTH * 2;
-            data = new byte[HEADER_LENGTH * 2];
+            data = new byte[length - HEADER_LENGTH];
         }
-
-        //random.nextBytes(data);
     }
 
+    /**
+     * Assemble datagram from byte[] payload
+     * @param payload
+     */
+    public Payload(byte[] payload) {
+        this(ByteBuffer.wrap(payload));
+    }
 
 
     /**
-     * Assemble datagram from payload
+     * Assemble datagram from ByteBuffer payload
      * @param payload
      */
-    public Datagram(byte[] payload) throws IOException {
+    public Payload(ByteBuffer payload) {
 
-        log.debug("Datagram() magic ID is: {} bytes long and contains: {}", MAGIC_ID.length, MAGIC_ID.toString());
-
-        ByteBuffer buffer = ByteBuffer.wrap(payload);
         byte[] id = new byte[8];
-        buffer.get(id);
+        payload.get(id);
         if(!Arrays.equals(id, MAGIC_ID)) {
-            log.warn("Datagram() - magic ID does not match!");
-            throw new IOException();
+            System.out.println(Arrays.toString(id));
+            System.out.println(Arrays.toString(MAGIC_ID));
+            throw new RuntimeException("Datagram magic ID does not match: " + MAGIC_ID);
         }
 
         // Order is importent when assembling header fields like this
-        type = buffer.getInt();
-        length = buffer.getInt();
-        curPkt = buffer.getLong();
-        maxPkt = buffer.getLong();
+        type = payload.getInt();
+        length = payload.getInt();
+        curPkt = payload.getLong();
+        maxPkt = payload.getLong();
 
-        realLength = length;
-        if(type == DataType.DATA.getValue()) {
-            data = new byte[length - HEADER_LENGTH];
-            buffer.get(data, 0, data.length);
-        } else {
-            data = new byte[HEADER_LENGTH * 2];
-        }
+        data = new byte[payload.limit() - payload.position()];
+        payload.get(data);
     }
-
 
     public int getLength() {
         return length;
     }
 
-    public int getRealLength() {
-        return realLength;
-    }
 
-    public byte[] getPayload() throws IOException {
+    public byte[] getPayload() {
 
-        log.debug("getPayload() - with type: {}, length: {}, sequence: {}", type, length, curPkt);
         ByteBuffer buffer = ByteBuffer.allocate(data.length + HEADER_LENGTH);
 
         // Order is important
