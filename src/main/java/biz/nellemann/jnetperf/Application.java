@@ -54,12 +54,16 @@ public class Application implements Callable<Integer> {
 
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
 
-        if(runMode.runServer) {
-            runServer();
-        } else if(runMode.remoteServer != null) {
-            runClient(runMode.remoteServer);
+        try {
+            if (runMode.runServer) {
+                runServer();
+            } else if (runMode.remoteServer != null) {
+                runClient(runMode.remoteServer);
+            }
+        } catch (IOException | InterruptedException e) {
+            System.err.println(e.getMessage());
         }
 
         return 0;

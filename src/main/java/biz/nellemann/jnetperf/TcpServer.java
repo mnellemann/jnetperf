@@ -22,7 +22,8 @@ public class TcpServer extends Thread {
         log.info("TcpServer()");
 
         socket = new ServerSocket(port);
-        socket.setSoTimeout(10000);
+        socket.setSoTimeout(0); // Wait indefinitely
+
     }
 
 
