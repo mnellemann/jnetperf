@@ -28,25 +28,25 @@ public class UdpServer extends Thread {
 
     final Logger log = LoggerFactory.getLogger(UdpServer.class);
 
-    private final DatagramSocket socket;
+    private final int port;
+    private DatagramSocket socket;
     private byte[] inBuffer;
 
 
-    public UdpServer(int port) throws SocketException {
+    public UdpServer(int port) {
         log.info("UdpServer()");
-        socket = new DatagramSocket(port);
+        this.port = port;
     }
 
     public void run() {
 
-        boolean running = true;
-
         try {
-            while (running) {
+            while (true) {
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
+                socket = new DatagramSocket(port);
                 session();
+                socket.close();
             }
-            socket.close();
         } catch(IOException e) {
             log.error(e.getMessage());
         }

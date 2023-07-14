@@ -20,6 +20,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 
 
@@ -32,20 +33,23 @@ public class Application implements Callable<Integer> {
     RunMode runMode;
 
     static class RunMode {
-        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server.", paramLabel = "HOST")
+        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server (client).", paramLabel = "SRV")
         String remoteServer;
 
-        @CommandLine.Option(names = { "-s", "--server" }, required = true, description = "Run server and wait for client.")
+        @CommandLine.Option(names = { "-s", "--server" }, required = true, description = "Run server and wait for client (server).")
         boolean runServer = false;
     }
 
-    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "NUM", description = "Packet size in bytes [default: ${DEFAULT-VALUE}].", converter = SuffixConverter.class)
+    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "NUM", description = "Packet size in bytes (client) [default: ${DEFAULT-VALUE}].", converter = UnitSuffixConverter.class)
     int packetSize = Payload.DEFAULT_LENGTH;
 
-    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}].", converter = SuffixConverter.class)
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send (client) [default: ${DEFAULT-VALUE}].", converter = UnitSuffixConverter.class)
     int packetCount = 150_000;
 
-    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "Network port [default: ${DEFAULT-VALUE}].")
+    @CommandLine.Option(names = { "-t", "--runtime" }, paramLabel = "SEC", description = "Time to run, precedes pkt-num (client) [default: ${DEFAULT-VALUE}].", converter = TimeSuffixConverter.class)
+    int timeInSeconds = 0;
+
+    @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "NUM", description = "Network port [default: ${DEFAULT-VALUE}].")
     int port = 4445;
 
     @CommandLine.Option(names = { "-u", "--udp" }, description = "Use UDP network protocol [default: ${DEFAULT-VALUE}].")
@@ -54,12 +58,19 @@ public class Application implements Callable<Integer> {
 
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
 
-        if(runMode.runServer) {
-            runServer();
-        } else if(runMode.remoteServer != null) {
-            runClient(runMode.remoteServer);
+        // Set locale to en_US to ensure correct/identical number formatting
+        Locale.setDefault(new Locale("en", "US"));
+
+        try {
+            if (runMode.runServer) {
+                runServer();
+            } else if (runMode.remoteServer != null) {
+                runClient(runMode.remoteServer);
+            }
+        } catch (IOException | InterruptedException e) {
+            System.err.println(e.getMessage());
         }
 
         return 0;
@@ -81,13 +92,14 @@ public class Application implements Callable<Integer> {
 
         if(useUdp) {
             if(packetSize > Payload.MAX_UDP_LENGTH) {
+                System.err.println("Packetsize > MAX UDP: " + packetSize);
                 packetSize = Payload.MAX_UDP_LENGTH;
             }
-            UdpClient udpClient = new UdpClient(remoteHost, port, packetSize, packetCount, 0);
+            UdpClient udpClient = new UdpClient(remoteHost, port, packetSize, packetCount, timeInSeconds);
             udpClient.start();
 
         } else {
-            TcpClient tcpClient = new TcpClient(remoteHost, port, packetSize, packetCount, 0);
+            TcpClient tcpClient = new TcpClient(remoteHost, port, packetSize, packetCount, timeInSeconds);
             tcpClient.start();
         }
     }

@@ -31,6 +31,7 @@ public class Statistics {
     private long packetsPerSec;
     private long packetsUnacked = 0;
     private int tickItererations = 0;
+    private int tickTotal = 0;
 
     private final long[] bytesPerSecAvgTmp = new long[MAX_TICKS_AVG];
     private final long[] packetsPerSecAvgTmp = new long[MAX_TICKS_AVG];
@@ -67,6 +68,7 @@ public class Statistics {
             if(tickItererations % LOG_AVG_MODULO == 0) {
                 printAverage();
             }
+            tickTotal++;
 
         }
 
@@ -118,6 +120,11 @@ public class Statistics {
 
     public long getPacketsTransferredTotal() {
         return packetsTransferredTotal;
+    }
+
+
+    public int getRuntime() {
+        return tickTotal;
     }
 
 

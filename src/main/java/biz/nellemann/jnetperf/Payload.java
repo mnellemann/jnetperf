@@ -34,7 +34,7 @@ import java.util.Arrays;
 public class Payload {
 
     public final static int MIN_LENGTH = 64;
-    public final static int MAX_UDP_LENGTH = 65507;
+    public final static int MAX_UDP_LENGTH = 64000;
     public final static int DEFAULT_LENGTH = 1432;
     public final static int HEADER_LENGTH = 32;
 

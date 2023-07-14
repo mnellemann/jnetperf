@@ -12,6 +12,7 @@ public class TcpServer extends Thread {
 
     final Logger log = LoggerFactory.getLogger(TcpServer.class);
 
+    private final int port;
     private ServerSocket socket;
     private DataInputStream in;
     private DataOutputStream out;
@@ -20,22 +21,20 @@ public class TcpServer extends Thread {
 
     public TcpServer(int port) throws IOException {
         log.info("TcpServer()");
-
-        socket = new ServerSocket(port);
-        socket.setSoTimeout(10000);
+        this.port = port;
     }
 
 
     public void run() {
 
-        boolean running = true;
-
         try {
-            while (running) {
+            while (true) {
+                socket = new ServerSocket(port);
+                socket.setSoTimeout(0); // Wait indefinitely
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 session();
+                socket.close();
             }
-            socket.close();
         } catch(IOException e) {
             log.error(e.getMessage());
         }
@@ -95,8 +94,7 @@ public class TcpServer extends Thread {
 
     private Payload receive() throws IOException {
         in.readFully(inBuffer);
-        Payload payload = new Payload(inBuffer);
-        return payload;
+        return new Payload(inBuffer);
     }
 
 }
