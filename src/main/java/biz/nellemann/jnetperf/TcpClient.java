@@ -20,33 +20,35 @@ public class TcpClient {
     private final InetAddress address;
     private Socket socket;
 
-    private final byte[] inBuffer = new byte[Datagram.DEFAULT_LENGTH];
+    private final byte[] inBuffer = new byte[Payload.DEFAULT_LENGTH];
     private final int packetCount;
     private final int packetSize;
+    private final int packetTime;
 
 
-    public TcpClient(String hostname, int port, int packets, int size) throws IOException {
+    public TcpClient(String hostname, int port, int size, int maxPackets, int maxTime) throws IOException {
         log.info("TcpClient() - target: {}, port: {}", hostname, port);
 
         this.port = port;
-        this.packetCount = packets;
         this.packetSize = size;
+        this.packetCount = maxPackets;
+        this.packetTime = maxTime;
 
         address = InetAddress.getByName(hostname);
         statistics = new Statistics();
     }
 
 
-    private void send(Datagram datagram) throws IOException {
-        out.write(datagram.getPayload());
+    private void send(Payload payload) throws IOException {
+        out.write(payload.getPayload());
         statistics.transferPacket();
-        statistics.transferBytes(datagram.getLength());
+        statistics.transferBytes(payload.getLength());
     }
 
 
-    private Datagram receive() throws IOException {
+    private Payload receive() throws IOException {
         in.readFully(inBuffer);
-        return new Datagram(inBuffer);
+        return new Payload(inBuffer);
     }
 
 
@@ -66,21 +68,21 @@ public class TcpClient {
         long sequence = 0;
 
         // Send handshake
-        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), packetSize, sequence++, packetCount);
-        send(datagram);
+        Payload payload = new Payload(PayloadType.HANDSHAKE.getValue(), packetSize, sequence++, packetCount);
+        send(payload);
 
-        datagram = receive();
-        if(datagram.getType() != DataType.ACK.getValue()) {
+        payload = receive();
+        if(payload.getType() != PayloadType.ACK.getValue()) {
             log.warn("No ACK!");
             return;
         }
 
         // Data datagrams ...
         for(int i = 0; i < packetCount; i++) {
-            datagram = new Datagram(DataType.DATA.getValue(), packetSize, sequence++, packetCount);
-            send(datagram);
-            datagram = receive();
-            if(datagram.getType() != DataType.ACK.getValue()) {
+            payload = new Payload(PayloadType.DATA.getValue(), packetSize, sequence++, packetCount);
+            send(payload);
+            payload = receive();
+            if(payload.getType() != PayloadType.ACK.getValue()) {
                 log.warn("No ACK!");
             }
             statistics.tick();
@@ -88,14 +90,13 @@ public class TcpClient {
 
         // End datagram
         //Thread.sleep(100);
-        datagram = new Datagram(DataType.END.getValue(), packetSize, sequence++, packetCount);
-        send(datagram);
-        System.out.println("Sending END datagram");
+        payload = new Payload(PayloadType.END.getValue(), packetSize, sequence++, packetCount);
+        send(payload);
 
         // TODO: Wait for ACK
-        datagram = receive();
+        payload = receive();
         statistics.ack();
-        if(datagram.getType() != DataType.ACK.getValue()) {
+        if(payload.getType() != PayloadType.ACK.getValue()) {
             log.warn("No ACK!");
             return;
         }

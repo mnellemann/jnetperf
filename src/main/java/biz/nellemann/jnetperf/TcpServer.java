@@ -7,7 +7,6 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 
 public class TcpServer extends Thread {
 
@@ -33,7 +32,7 @@ public class TcpServer extends Thread {
 
         try {
             while (running) {
-                inBuffer = new byte[Datagram.DEFAULT_LENGTH];
+                inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 session();
             }
             socket.close();
@@ -58,28 +57,28 @@ public class TcpServer extends Thread {
 
         while (running) {
 
-            Datagram datagram = receive();
+            Payload payload = receive();
             statistics.transferPacket();
-            statistics.transferBytes(datagram.getLength());
+            statistics.transferBytes(payload.getLength());
 
-            if(datagram.getType() == DataType.HANDSHAKE.getValue()) {
+            if(payload.getType() == PayloadType.HANDSHAKE.getValue()) {
                 log.info("Handshake from ... {}", address);
                 // Setup to receive larger datagrams
-                inBuffer = new byte[datagram.getLength()];
+                inBuffer = new byte[payload.getLength()];
                 statistics.reset();
             }
 
-            if(datagram.getType() == DataType.END.getValue()) {
+            if(payload.getType() == PayloadType.END.getValue()) {
                 ackEnd = true;
             }
 
             // Send ACK
-            Datagram responseDatagram = new Datagram(DataType.ACK.getValue(), Datagram.DEFAULT_LENGTH, datagram.getCurPkt(), 1);
-            out.write(responseDatagram.getPayload());
+            Payload responsePayload = new Payload(PayloadType.ACK.getValue(), Payload.DEFAULT_LENGTH, payload.getCurPkt(), 1);
+            out.write(responsePayload.getPayload());
             statistics.ack();
 
             statistics.tick();
-            if(ackEnd && statistics.getPacketsTransferredTotal() > datagram.getMaxPkt()) {
+            if(ackEnd) {
                 running = false;
                 statistics.printAverage();
                 statistics.printSummary();
@@ -94,10 +93,10 @@ public class TcpServer extends Thread {
     }
 
 
-    private Datagram receive() throws IOException {
+    private Payload receive() throws IOException {
         in.readFully(inBuffer);
-        Datagram datagram = new Datagram(inBuffer);
-        return datagram;
+        Payload payload = new Payload(inBuffer);
+        return payload;
     }
 
 }

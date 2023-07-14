@@ -35,34 +35,36 @@ public class UdpClient {
     private final InetAddress address;
     private final DatagramSocket socket;
 
-    private final byte[] inBuffer = new byte[Datagram.DEFAULT_LENGTH];
+    private final byte[] inBuffer = new byte[Payload.DEFAULT_LENGTH];
     private final int packetCount;
     private final int packetSize;
+    private final int packeTime;
 
 
-    public UdpClient(String hostname, int port, int packets, int size) throws UnknownHostException, SocketException {
+    public UdpClient(String hostname, int port, int size, int maxPackets, int maxTime) throws UnknownHostException, SocketException {
         log.info("UdpClient() - target: {}, port: {}", hostname, port);
 
         this.port = port;
-        this.packetCount = packets;
         this.packetSize = size;
+        this.packetCount = maxPackets;
+        this.packeTime = maxTime;
 
         socket = new DatagramSocket();
         address = InetAddress.getByName(hostname);
         statistics = new Statistics();
     }
 
-    private void send(Datagram datagram) throws IOException {
-        DatagramPacket packet = new DatagramPacket(datagram.getPayload(), datagram.getLength(), address, port);
+    private void send(Payload payload) throws IOException {
+        DatagramPacket packet = new DatagramPacket(payload.getPayload(), payload.getLength(), address, port);
         socket.send(packet);
         statistics.transferPacket();
-        statistics.transferBytes(datagram.getLength());
+        statistics.transferBytes(payload.getLength());
     }
 
-    private Datagram receive() throws IOException {
+    private Payload receive() throws IOException {
         DatagramPacket packet = new DatagramPacket(inBuffer, inBuffer.length);
         socket.receive(packet);
-        return new Datagram(inBuffer);
+        return new Payload(inBuffer);
     }
 
 
@@ -76,21 +78,21 @@ public class UdpClient {
         long sequence = 0;
 
         // Send handshake
-        Datagram datagram = new Datagram(DataType.HANDSHAKE.getValue(), Datagram.DEFAULT_LENGTH, sequence++, packetCount);
-        send(datagram);
+        Payload payload = new Payload(PayloadType.HANDSHAKE.getValue(), Payload.DEFAULT_LENGTH, sequence++, packetCount);
+        send(payload);
 
-        datagram = receive();
-        if(datagram.getType() != DataType.ACK.getValue()) {
+        payload = receive();
+        if(payload.getType() != PayloadType.ACK.getValue()) {
             log.warn("No ACK!");
             return;
         }
 
         // Data datagrams ...
         for(int i = 0; i < packetCount; i++) {
-            datagram = new Datagram(DataType.DATA.getValue(), packetSize, sequence++, packetCount);
-            send(datagram);
-            datagram = receive();
-            if(datagram.getType() != DataType.ACK.getValue()) {
+            payload = new Payload(PayloadType.DATA.getValue(), packetSize, sequence++, packetCount);
+            send(payload);
+            payload = receive();
+            if(payload.getType() != PayloadType.ACK.getValue()) {
                 log.warn("No ACK!");
             }
             statistics.tick();
@@ -98,13 +100,13 @@ public class UdpClient {
 
         // End datagram
         //Thread.sleep(100);
-        datagram = new Datagram(DataType.END.getValue(), packetSize, sequence++, packetCount);
-        send(datagram);
+        payload = new Payload(PayloadType.END.getValue(), packetSize, sequence++, packetCount);
+        send(payload);
 
         // TODO: Wait for ACK
-        datagram = receive();
+        payload = receive();
         statistics.ack();
-        if(datagram.getType() != DataType.ACK.getValue()) {
+        if(payload.getType() != PayloadType.ACK.getValue()) {
             log.warn("No ACK!");
             return;
         }

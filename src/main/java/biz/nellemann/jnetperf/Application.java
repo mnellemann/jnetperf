@@ -20,7 +20,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.util.concurrent.Callable;
 
 
@@ -33,17 +32,17 @@ public class Application implements Callable<Integer> {
     RunMode runMode;
 
     static class RunMode {
-        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server.", paramLabel = "SERVER")
+        @CommandLine.Option(names = { "-c", "--connect" }, required = true, description = "Connect to remote server.", paramLabel = "HOST")
         String remoteServer;
 
         @CommandLine.Option(names = { "-s", "--server" }, required = true, description = "Run server and wait for client.")
         boolean runServer = false;
     }
 
-    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "SIZE", description = "Packet size in bytes [default: ${DEFAULT-VALUE}].")
-    int packetSize = Datagram.DEFAULT_LENGTH;
+    @CommandLine.Option(names = { "-l", "--pkt-len" }, paramLabel = "NUM", description = "Packet size in bytes [default: ${DEFAULT-VALUE}].", converter = SuffixConverter.class)
+    int packetSize = Payload.DEFAULT_LENGTH;
 
-    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}].")
+    @CommandLine.Option(names = { "-n", "--pkt-num" }, paramLabel = "NUM", description = "Number of packets to send [default: ${DEFAULT-VALUE}].", converter = SuffixConverter.class)
     int packetCount = 150_000;
 
     @CommandLine.Option(names = { "-p", "--port" }, paramLabel = "PORT", description = "Network port [default: ${DEFAULT-VALUE}].")
@@ -75,15 +74,20 @@ public class Application implements Callable<Integer> {
 
 
     private void runClient(String remoteHost) throws InterruptedException, IOException {
+
+        if(packetSize < Payload.MIN_LENGTH) {
+            packetSize = Payload.MIN_LENGTH;
+        }
+
         if(useUdp) {
-            if(packetSize > Datagram.MAX_UDP_LENGTH) {
-                System.err.println("Packet size not allowed for UDP");
-                return;
+            if(packetSize > Payload.MAX_UDP_LENGTH) {
+                packetSize = Payload.MAX_UDP_LENGTH;
             }
-            UdpClient udpClient = new UdpClient(remoteHost, port, packetCount, packetSize);
+            UdpClient udpClient = new UdpClient(remoteHost, port, packetSize, packetCount, 0);
             udpClient.start();
+
         } else {
-            TcpClient tcpClient = new TcpClient(remoteHost, port, packetCount, packetSize);
+            TcpClient tcpClient = new TcpClient(remoteHost, port, packetSize, packetCount, 0);
             tcpClient.start();
         }
     }

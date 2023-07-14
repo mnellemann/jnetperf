@@ -31,8 +31,9 @@ import java.util.Arrays;
  *
  */
 
-public class Datagram {
+public class Payload {
 
+    public final static int MIN_LENGTH = 64;
     public final static int MAX_UDP_LENGTH = 65507;
     public final static int DEFAULT_LENGTH = 1432;
     public final static int HEADER_LENGTH = 32;
@@ -52,13 +53,13 @@ public class Datagram {
      * @param length
      * @param currentPkt
      */
-    public Datagram(int type, int length, long currentPkt, long maxPkt) {
+    public Payload(int type, int length, long currentPkt, long maxPkt) {
         this.type = type;
         this.curPkt = currentPkt;
         this.maxPkt = maxPkt;
         this.length = length;
 
-        if (type == DataType.HANDSHAKE.getValue()) {
+        if (type == PayloadType.HANDSHAKE.getValue()) {
             data = new byte[DEFAULT_LENGTH - HEADER_LENGTH];
         } else {
             data = new byte[length - HEADER_LENGTH];
@@ -69,7 +70,7 @@ public class Datagram {
      * Assemble datagram from byte[] payload
      * @param payload
      */
-    public Datagram(byte[] payload) {
+    public Payload(byte[] payload) {
         this(ByteBuffer.wrap(payload));
     }
 
@@ -78,7 +79,7 @@ public class Datagram {
      * Assemble datagram from ByteBuffer payload
      * @param payload
      */
-    public Datagram(ByteBuffer payload) {
+    public Payload(ByteBuffer payload) {
 
         byte[] id = new byte[8];
         payload.get(id);

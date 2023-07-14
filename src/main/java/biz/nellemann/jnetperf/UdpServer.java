@@ -43,7 +43,7 @@ public class UdpServer extends Thread {
 
         try {
             while (running) {
-                inBuffer = new byte[Datagram.DEFAULT_LENGTH];
+                inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 session();
             }
             socket.close();
@@ -68,29 +68,29 @@ public class UdpServer extends Thread {
             InetAddress address = packet.getAddress();
             int port = packet.getPort();
 
-            Datagram datagram = new Datagram(packet.getData());
+            Payload payload = new Payload(packet.getData());
             statistics.transferPacket();
-            statistics.transferBytes(datagram.getLength());
+            statistics.transferBytes(payload.getLength());
 
-            if(datagram.getType() == DataType.HANDSHAKE.getValue()) {
+            if(payload.getType() == PayloadType.HANDSHAKE.getValue()) {
                 log.info("Handshake from ... {}", address);
                 // Setup to receive larger datagrams
-                inBuffer = new byte[datagram.getLength()];
+                inBuffer = new byte[payload.getLength()];
                 statistics.reset();
             }
 
-            if(datagram.getType() == DataType.END.getValue()) {
+            if(payload.getType() == PayloadType.END.getValue()) {
                 ackEnd = true;
             }
 
             // Send ACK
-            Datagram responseDatagram = new Datagram(DataType.ACK.getValue(), Datagram.DEFAULT_LENGTH, datagram.getCurPkt(), 1);
-            packet = new DatagramPacket(responseDatagram.getPayload(), responseDatagram.getLength(), address, port);
+            Payload responsePayload = new Payload(PayloadType.ACK.getValue(), Payload.DEFAULT_LENGTH, payload.getCurPkt(), 1);
+            packet = new DatagramPacket(responsePayload.getPayload(), responsePayload.getLength(), address, port);
             socket.send(packet);
             statistics.ack();
 
             statistics.tick();
-            if(ackEnd && statistics.getPacketsTransferredTotal() > datagram.getMaxPkt()) {
+            if(ackEnd) {
                 running = false;
                 statistics.printAverage();
                 statistics.printSummary();
