@@ -6,37 +6,37 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SuffixConverter implements CommandLine.ITypeConverter<Integer> {
+public class TimeSuffixConverter implements CommandLine.ITypeConverter<Integer> {
 
-    final private Pattern pattern = Pattern.compile("(\\d+)([kmg])?b?", Pattern.CASE_INSENSITIVE);
+    final private Pattern pattern = Pattern.compile("(\\d+)([smh])?", Pattern.CASE_INSENSITIVE);
 
     public Integer convert(String value) {
-        int bytes = 0;
+        int seconds = 0;
 
         Matcher matcher = pattern.matcher(value);
         if (matcher.find()) {
             int number = Integer.parseInt(matcher.group(1));
-            if(matcher.group(2) != null) {  // We got the kilo, mega og giga suffix
+            if(matcher.group(2) != null) {  // We got the second, minute or hour suffix
                 String suffix = matcher.group(2);
                 switch (suffix.toLowerCase(Locale.ROOT)) {
-                    case "k":
-                        bytes = number * 1024;
+                    case "s":
+                        seconds = number;
                         break;
                     case "m":
-                        bytes = number * 1024 * 1024;
+                        seconds = number * 60;
                         break;
-                    case "g":
-                        bytes = number * 1024 * 1024 * 1024;
+                    case "h":
+                        seconds = number * 60 * 60;
                         break;
                     default:
                         System.err.println("Unknown suffix: " + suffix);
-                        bytes = number;
+                        seconds = number;
                 }
             } else {
-                bytes = number;
+                seconds = number;
             }
         }
-        return bytes;
+        return seconds;
     }
 
 }
