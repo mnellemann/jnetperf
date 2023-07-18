@@ -5,12 +5,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TcpClient {
 
     final Logger log = LoggerFactory.getLogger(TcpClient.class);
 
-    private Statistics statistics;
+    private final Statistics statistics;
 
     private DataOutputStream out;
     private DataInputStream in;
@@ -21,18 +22,18 @@ public class TcpClient {
     private Socket socket;
 
     private final byte[] inBuffer = new byte[Payload.DEFAULT_LENGTH];
-    private final int packetCount;
-    private final int packetSize;
-    private final int packetTime;
+    private final int packets;
+    private final int length;
+    private final int runtime;
 
 
-    public TcpClient(String hostname, int port, int size, int maxPackets, int maxTime) throws IOException {
+    public TcpClient(String hostname, int port, int length, int packets, int runtime) throws IOException {
         log.info("TcpClient() - target: {}, port: {}", hostname, port);
 
         this.port = port;
-        this.packetSize = size;
-        this.packetCount = maxPackets;
-        this.packetTime = maxTime;
+        this.length = length;
+        this.packets = packets;
+        this.runtime = runtime;
 
         address = InetAddress.getByName(hostname);
         statistics = new Statistics();
@@ -61,39 +62,53 @@ public class TcpClient {
 
     public void start() throws IOException, InterruptedException {
 
+        AtomicBoolean keepRunning = new AtomicBoolean(true);
+        Thread shutdownHook = new Thread(() -> {
+            keepRunning.set(false);
+            System.out.println("Stopping jnetperf, please wait ...");
+        });
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+
+        long sequence = 0;
         socket = new Socket(address, port);
         in = new DataInputStream(socket.getInputStream());
         out = new DataOutputStream(socket.getOutputStream());
 
-        long sequence = 0;
 
         // Send handshake
-        Payload payload = new Payload(PayloadType.HANDSHAKE.getValue(), packetSize, sequence++, packetCount);
+        Payload payload = new Payload(PayloadType.HANDSHAKE.getValue(), length, sequence++, packets);
         send(payload);
-
         payload = receive();
         if(payload.getType() != PayloadType.ACK.getValue()) {
             log.warn("No ACK!");
             return;
         }
 
-        // Data datagrams ...
-        for(int i = 0; i < packetCount; i++) {
-            payload = new Payload(PayloadType.DATA.getValue(), packetSize, sequence++, packetCount);
+        // Send data
+        do {
+            payload = new Payload(PayloadType.DATA.getValue(), length, sequence++, packets);
             send(payload);
             payload = receive();
             if(payload.getType() != PayloadType.ACK.getValue()) {
                 log.warn("No ACK!");
             }
             statistics.tick();
-        }
 
-        // End datagram
-        //Thread.sleep(100);
-        payload = new Payload(PayloadType.END.getValue(), packetSize, sequence++, packetCount);
+            if (sequence > packets) {
+                System.out.println("Max packets reached");
+                keepRunning.set(false);;
+            }
+
+            if(runtime > 0 && statistics.getRuntime() > runtime) {
+                System.out.println("Max runtime reached");
+                keepRunning.set(false);
+            }
+
+        } while (keepRunning.get());
+
+        // Send end
+        payload = new Payload(PayloadType.END.getValue(), length, sequence++, packets);
         send(payload);
-
-        // TODO: Wait for ACK
         payload = receive();
         statistics.ack();
         if(payload.getType() != PayloadType.ACK.getValue()) {

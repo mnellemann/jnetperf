@@ -21,6 +21,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,25 +30,25 @@ public class UdpClient {
 
     final Logger log = LoggerFactory.getLogger(UdpClient.class);
 
-    private Statistics statistics;
+    private final Statistics statistics;
 
     private final int port;
     private final InetAddress address;
     private final DatagramSocket socket;
 
     private final byte[] inBuffer = new byte[Payload.DEFAULT_LENGTH];
-    private final int packetCount;
-    private final int packetSize;
-    private final int packeTime;
+    private final int length;
+    private final int packets;
+    private final int runtime;
 
 
-    public UdpClient(String hostname, int port, int size, int maxPackets, int maxTime) throws UnknownHostException, SocketException {
+    public UdpClient(String hostname, int port, int length, int packets, int runtime) throws UnknownHostException, SocketException {
         log.info("UdpClient() - target: {}, port: {}", hostname, port);
 
         this.port = port;
-        this.packetSize = size;
-        this.packetCount = maxPackets;
-        this.packeTime = maxTime;
+        this.length = length;
+        this.packets = packets;
+        this.runtime = runtime;
 
         socket = new DatagramSocket();
         address = InetAddress.getByName(hostname);
@@ -62,7 +63,7 @@ public class UdpClient {
     }
 
     private Payload receive() throws IOException {
-        DatagramPacket packet = new DatagramPacket(inBuffer, inBuffer.length);
+        DatagramPacket packet = new DatagramPacket(inBuffer, Payload.DEFAULT_LENGTH);
         socket.receive(packet);
         return new Payload(inBuffer);
     }
@@ -75,35 +76,51 @@ public class UdpClient {
 
     public void start() throws IOException, InterruptedException {
 
+        AtomicBoolean keepRunning = new AtomicBoolean(true);
+        Thread shutdownHook = new Thread(() -> {
+            keepRunning.set(false);
+            System.out.println("Stopping jnetperf, please wait ...");
+        });
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
+
         long sequence = 0;
 
         // Send handshake
-        Payload payload = new Payload(PayloadType.HANDSHAKE.getValue(), Payload.DEFAULT_LENGTH, sequence++, packetCount);
+        Payload payload = new Payload(PayloadType.HANDSHAKE.getValue(), Payload.DEFAULT_LENGTH, sequence++, packets);
         send(payload);
-
         payload = receive();
         if(payload.getType() != PayloadType.ACK.getValue()) {
             log.warn("No ACK!");
             return;
         }
 
-        // Data datagrams ...
-        for(int i = 0; i < packetCount; i++) {
-            payload = new Payload(PayloadType.DATA.getValue(), packetSize, sequence++, packetCount);
+        // Send data
+        do {
+            payload = new Payload(PayloadType.DATA.getValue(), length, sequence++, packets);
             send(payload);
             payload = receive();
             if(payload.getType() != PayloadType.ACK.getValue()) {
                 log.warn("No ACK!");
             }
             statistics.tick();
-        }
 
-        // End datagram
+            if (sequence > packets) {
+                System.out.println("Max packets reached");
+                keepRunning.set(false);
+            }
+
+            if(runtime > 0  && statistics.getRuntime() > runtime) {
+                System.out.println("Max runtime reached");
+                keepRunning.set(false);
+            }
+
+        } while (keepRunning.get());
+
+
+        // Send end
         //Thread.sleep(100);
-        payload = new Payload(PayloadType.END.getValue(), packetSize, sequence++, packetCount);
+        payload = new Payload(PayloadType.END.getValue(), length, sequence++, packets);
         send(payload);
-
-        // TODO: Wait for ACK
         payload = receive();
         statistics.ack();
         if(payload.getType() != PayloadType.ACK.getValue()) {
