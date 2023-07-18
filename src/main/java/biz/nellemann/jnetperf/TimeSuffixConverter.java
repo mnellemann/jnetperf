@@ -29,8 +29,7 @@ public class TimeSuffixConverter implements CommandLine.ITypeConverter<Integer> 
                         seconds = number * 60 * 60;
                         break;
                     default:
-                        System.err.println("Unknown suffix: " + suffix);
-                        seconds = number;
+                        throw new IllegalArgumentException("Unknown suffix: " + suffix);
                 }
             } else {
                 seconds = number;

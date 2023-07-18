@@ -25,12 +25,13 @@ public class Statistics {
     private final int MAX_TICKS_AVG = 300;
     private final int LOG_AVG_MODULO = 30;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault());
-    private long packetsTransferred, packetsTransferredTotal = 0;
+    private long packetsTransferred;
+    private long packetsTransferredTotal = 0;
     private long bytesTransferred, bytesTransferredTotal = 0;
     private long bytesPerSec;
     private long packetsPerSec;
     private long packetsUnacked = 0;
-    private int tickItererations = 0;
+    private int tickIterations = 0;
     private int tickTotal = 0;
 
     private final long[] bytesPerSecAvgTmp = new long[MAX_TICKS_AVG];
@@ -52,8 +53,8 @@ public class Statistics {
             // Because we do this every second ...
             bytesPerSec = bytesTransferred;
             packetsPerSec = packetsTransferred;
-            bytesPerSecAvgTmp[tickItererations] = bytesTransferred;
-            packetsPerSecAvgTmp[tickItererations] = packetsTransferred;
+            bytesPerSecAvgTmp[tickIterations] = bytesTransferred;
+            packetsPerSecAvgTmp[tickIterations] = packetsTransferred;
 
             timestamp1 = timestamp2;
             printStatus();
@@ -61,11 +62,11 @@ public class Statistics {
             bytesTransferred = 0;
             packetsTransferred = 0;
 
-            if(++tickItererations >= MAX_TICKS_AVG) {
-                tickItererations = 0;
+            if(++tickIterations >= MAX_TICKS_AVG) {
+                tickIterations = 0;
             }
 
-            if(tickItererations % LOG_AVG_MODULO == 0) {
+            if(tickIterations % LOG_AVG_MODULO == 0) {
                 printAverage();
             }
             tickTotal++;
@@ -78,7 +79,6 @@ public class Statistics {
 
     public void printStatus() {
         System.out.printf("%-19s -  Status: %10d pkt/s %14d B/s %12d KB/s %8d MB/s\n", formatter.format(Instant.now()), packetsPerSec, bytesPerSec, bytesPerSec/1_000, bytesPerSec/1_000_000);
-
     }
 
 
@@ -122,6 +122,9 @@ public class Statistics {
         return packetsTransferredTotal;
     }
 
+    public long getBytesTransferredTotal() {
+        return bytesTransferredTotal;
+    }
 
     public int getRuntime() {
         return tickTotal;
@@ -156,6 +159,5 @@ public class Statistics {
         }
         return avg;
     }
-
 
 }

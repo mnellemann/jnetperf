@@ -118,7 +118,6 @@ public class UdpClient {
 
 
         // Send end
-        //Thread.sleep(100);
         payload = new Payload(PayloadType.END.getValue(), length, sequence++, packets);
         send(payload);
         payload = receive();
@@ -132,6 +131,11 @@ public class UdpClient {
         close();
         statistics.printAverage();
         statistics.printSummary();
+    }
+
+
+    public Statistics getStatistics() {
+        return statistics;
     }
 
 }

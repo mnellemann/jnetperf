@@ -17,6 +17,8 @@ public class TcpServer extends Thread {
     private DataInputStream in;
     private DataOutputStream out;
     private byte[] inBuffer;
+    private boolean runThread = true;
+    private boolean runSession = true;
 
 
     public TcpServer(int port) throws IOException {
@@ -28,7 +30,7 @@ public class TcpServer extends Thread {
     public void run() {
 
         try {
-            while (true) {
+            while (runThread) {
                 socket = new ServerSocket(port);
                 socket.setSoTimeout(0); // Wait indefinitely
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
@@ -45,8 +47,8 @@ public class TcpServer extends Thread {
     public void session() throws IOException {
 
         Statistics statistics = new Statistics();
-        boolean running = true;
         boolean ackEnd = false;
+        runSession = true;
 
         Socket server = socket.accept();
         InetAddress address = socket.getInetAddress();
@@ -54,7 +56,7 @@ public class TcpServer extends Thread {
         in = new DataInputStream(server.getInputStream());
         out = new DataOutputStream(server.getOutputStream());
 
-        while (running) {
+        while (runSession) {
 
             Payload payload = receive();
             statistics.transferPacket();
@@ -78,7 +80,7 @@ public class TcpServer extends Thread {
 
             statistics.tick();
             if(ackEnd) {
-                running = false;
+                runSession = false;
                 statistics.printAverage();
                 statistics.printSummary();
             }
@@ -95,6 +97,12 @@ public class TcpServer extends Thread {
     private Payload receive() throws IOException {
         in.readFully(inBuffer);
         return new Payload(inBuffer);
+    }
+
+
+    public void finish() {
+        runThread = false;
+        runSession = false;
     }
 
 }

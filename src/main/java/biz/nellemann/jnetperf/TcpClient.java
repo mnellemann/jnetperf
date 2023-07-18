@@ -122,4 +122,9 @@ public class TcpClient {
         statistics.printSummary();
     }
 
+
+    public Statistics getStatistics() {
+        return statistics;
+    }
+
 }

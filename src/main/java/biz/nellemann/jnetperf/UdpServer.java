@@ -32,6 +32,9 @@ public class UdpServer extends Thread {
     private DatagramSocket socket;
     private byte[] inBuffer;
 
+    private boolean runThread = true;
+    private boolean runSession = true;
+
 
     public UdpServer(int port) {
         log.info("UdpServer()");
@@ -41,7 +44,7 @@ public class UdpServer extends Thread {
     public void run() {
 
         try {
-            while (true) {
+            while (runThread) {
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 socket = new DatagramSocket(port);
                 session();
@@ -57,10 +60,10 @@ public class UdpServer extends Thread {
     public void session() throws IOException {
 
         Statistics statistics = new Statistics();
-        boolean running = true;
         boolean ackEnd = false;
+        runSession = true;
 
-        while (running) {
+        while (runSession) {
 
             DatagramPacket packet = new DatagramPacket(inBuffer, inBuffer.length);
             socket.receive(packet);
@@ -91,7 +94,7 @@ public class UdpServer extends Thread {
 
             statistics.tick();
             if(ackEnd) {
-                running = false;
+                runSession = false;
                 statistics.printAverage();
                 statistics.printSummary();
             }
@@ -100,5 +103,12 @@ public class UdpServer extends Thread {
 
 
     }
+
+
+    public void finish() {
+        runThread = false;
+        runSession = false;
+    }
+
 
 }
