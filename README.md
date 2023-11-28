@@ -8,12 +8,12 @@ You need Java (JRE) version 8 or later to run jnetperf.
 
 ## Usage Instructions
 
-- Install the jnetperf package (*.deb*, *.rpm* or *.jar*) from [Packages](https://git.data.coop/nellemann/jnetperf/packages) or compile from source.
+- Install the jnetperf package (*.deb*, *.rpm* or *.jar*) from [releases](https://github.com/mnellemann/jnetperf/releases) or compile from source.
 - Run **/opt/jnetperf/bin/jperf**, if installed from package, or as **java -jar /path/to/jnetperf.jar**
 
 ```shell
 Usage: jnetperf [-huV] [-l=NUM] [-n=NUM] [-p=NUM] [-t=SEC] (-c=SRV | -s)
-For more information visit https://git.data.coop/nellemann/jnetperf
+For more information visit https://github.com/mnellemann/jnetperf
   -c, --connect=SRV   Connect to remote server (client).
   -h, --help          Show this help message and exit.
   -l, --pkt-len=NUM   Packet size in bytes (client) [default: 1432].
