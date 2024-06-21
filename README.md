@@ -9,7 +9,7 @@ You need Java (JRE) version 8 or later to run jnetperf.
 ## Usage Instructions
 
 - Install the jnetperf package (*.deb*, *.rpm* or *.jar*) from [releases](https://github.com/mnellemann/jnetperf/releases) or compile from source.
-- Run **/opt/jnetperf/bin/jperf**, if installed from package, or as **java -jar /path/to/jnetperf.jar**
+- Run **/opt/jnetperf/bin/jnetperf**, if installed from package, or as **java -jar /path/to/jnetperf-x.y.z-all.jar**
 
 ```shell
 Usage: jnetperf [-huV] [-l=NUM] [-n=NUM] [-p=NUM] [-t=SEC] (-c=SRV | -s)
@@ -40,6 +40,10 @@ On *host B* run jnetperf as a client connecting to the server and sending data:
 java -jar jnetperf-x.y.z-all.jar -c server-ip
 ```
 
+-----
+
+<details closed>
+  <summary><B>Development and Local Testing</B></summary>
 
 ## Development Information
 
