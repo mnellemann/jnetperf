@@ -45,8 +45,7 @@ public class UdpServer extends Thread {
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 socket = new DatagramSocket(port);
                 session();
-            } catch (IOException e) {
-                log.error(e.getMessage());
+            } catch (IOException ignored) {
             } finally {
                 socket.close();
             }

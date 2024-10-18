@@ -35,13 +35,11 @@ public class TcpServer extends Thread {
                 socket.setSoTimeout(0); // Wait indefinitely
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 session();
-            } catch (IOException e) {
-                log.error(e.getMessage());
+            } catch (IOException ignored) {
             } finally {
                 try {
                     socket.close();
-                } catch (IOException e) {
-                    log.error(e.getMessage());
+                } catch (IOException ignored) {
                 }
             }
 

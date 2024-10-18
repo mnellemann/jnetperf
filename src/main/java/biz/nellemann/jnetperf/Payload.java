@@ -66,13 +66,13 @@ public class Payload {
         }
     }
 
-    /**
-     * Assemble datagram from byte[] payload
-     * @param payload
-     */
-    public Payload(byte[] payload) {
-        this(ByteBuffer.wrap(payload));
-    }
+            /**
+             * Assemble datagram from byte[] payload
+             * @param payload
+             */
+            public Payload(byte[] payload) {
+                this(ByteBuffer.wrap(payload));
+            }
 
 
     /**
@@ -86,7 +86,7 @@ public class Payload {
         if(!Arrays.equals(id, MAGIC_ID)) {
             System.out.println(Arrays.toString(id));
             System.out.println(Arrays.toString(MAGIC_ID));
-            throw new RuntimeException("Datagram magic ID does not match: " + MAGIC_ID);
+            throw new RuntimeException("Datagram magic ID does not match: " + Arrays.toString(MAGIC_ID));
         }
 
         // Order is importent when assembling header fields like this

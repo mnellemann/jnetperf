@@ -34,9 +34,8 @@ public class Statistics {
     private int tickIterations = 0;
     private int tickTotal = 0;
 
-    private long latency;
-    private long timestamp;
-    private long duration;
+    private long timestamp = System.nanoTime();
+    private long duration = 0;
 
     private final long[] bytesPerSecAvgTmp = new long[MAX_TICKS_AVG];
     private final long[] packetsPerSecAvgTmp = new long[MAX_TICKS_AVG];
@@ -58,10 +57,9 @@ public class Statistics {
             // Because we do this every second ...
             bytesPerSec = bytesTransferred;
             packetsPerSec = packetsTransferred;
-            latency = duration / 1_000_000;
             bytesPerSecAvgTmp[tickIterations] = bytesTransferred;
             packetsPerSecAvgTmp[tickIterations] = packetsTransferred;
-            latencyPerSecAvgTmp[tickIterations] = latency;
+            latencyPerSecAvgTmp[tickIterations] = duration;
 
             tickTimestamp = tempTimestamp;
             printStatus();
@@ -85,13 +83,14 @@ public class Statistics {
 
 
     public void printStatus() {
-        System.out.printf("%-19s -  Status: %6d ms %10d pkt/s %14d B/s %12d KB/s %8d MB/s\n", formatter.format(Instant.now()), latency, packetsPerSec, bytesPerSec, bytesPerSec/1_000, bytesPerSec/1_000_000);
+        System.out.printf("%-19s -  Status: %10d ns %6.2f ms %10d pkt/s %14d B/s %12d KB/s %8d MB/s\n", formatter.format(Instant.now()), duration, ((float)duration / 1_000_000), packetsPerSec, bytesPerSec, bytesPerSec/1_000, bytesPerSec/1_000_000);
     }
 
 
     public void printSummary() {
         System.out.println();
-        System.out.printf("%-19s - Summary: %6d ms %10d pkts  %14d B   %12d KB   %8d MB   %8.2f GB\n", formatter.format(Instant.now()), latency, packetsTransferredTotal, bytesTransferredTotal, bytesTransferredTotal /1_000, bytesTransferredTotal /1_000_000, (double) bytesTransferredTotal/1_000_000_000);
+        System.out.printf("%-19s - Summary: %10d ns %6.2f ms %10d pkts  %14d B   %12d KB   %8d MB   %8.2f GB\n", formatter.format(Instant.now()), duration,
+                ((float)duration / 1_000_000), packetsTransferredTotal, bytesTransferredTotal, bytesTransferredTotal /1_000, bytesTransferredTotal /1_000_000, (double) bytesTransferredTotal/1_000_000_000);
     }
 
 
@@ -99,8 +98,8 @@ public class Statistics {
         long bytesPerSecAvg = getAverage(bytesPerSecAvgTmp, bytesTransferred);
         long packetsPerSecAvg = getAverage(packetsPerSecAvgTmp, packetsTransferred);
         long latencyPerSecAvg = getAverage(latencyPerSecAvgTmp, packetsTransferred);
-        System.out.printf("%-19s - Average: %6d ms %10d pkt/s %14d B/s %12d KB/s %8d MB/s %8.2f GB/s\n", formatter.format(Instant.now()),
-                latencyPerSecAvg, packetsPerSecAvg, bytesPerSecAvg, bytesPerSecAvg /1_000, bytesPerSecAvg /1_000_000, (double) bytesPerSecAvg /1_000_000_000);
+        System.out.printf("%-19s - Average: %10d ns %6.2f ms %10d pkt/s %14d B/s %12d KB/s %8d MB/s %8.2f GB/s\n", formatter.format(Instant.now()),
+                latencyPerSecAvg, ((float)latencyPerSecAvg / 1_000_000), packetsPerSecAvg, bytesPerSecAvg, bytesPerSecAvg /1_000, bytesPerSecAvg /1_000_000, (double) bytesPerSecAvg /1_000_000_000);
     }
 
 
@@ -113,9 +112,8 @@ public class Statistics {
         packetsUnacked++;
         packetsTransferred++;
         packetsTransferredTotal++;
-        duration = System.nanoTime() - timestamp;;
+        duration = System.nanoTime() - timestamp;
         timestamp = System.nanoTime();
-
     }
 
 
