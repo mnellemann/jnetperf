@@ -29,18 +29,23 @@ public class TcpServer extends Thread {
 
     public void run() {
 
-        try {
-            while (runThread) {
+        while (runThread) {
+            try {
                 socket = new ServerSocket(port);
                 socket.setSoTimeout(0); // Wait indefinitely
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 session();
-                socket.close();
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            } finally {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    log.error(e.getMessage());
+                }
             }
-        } catch(IOException e) {
-            log.error(e.getMessage());
-        }
 
+        }
     }
 
 

@@ -97,6 +97,7 @@ public class UdpClient {
         // Send data
         do {
             payload = new Payload(PayloadType.DATA.getValue(), length, sequence++, packets);
+
             send(payload);
             payload = receive();
             if(payload.getType() != PayloadType.ACK.getValue()) {

@@ -19,8 +19,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,18 +40,17 @@ public class UdpServer extends Thread {
     }
 
     public void run() {
-
-        try {
-            while (runThread) {
+        while (runThread) {
+            try {
                 inBuffer = new byte[Payload.DEFAULT_LENGTH];
                 socket = new DatagramSocket(port);
                 session();
+            } catch (IOException e) {
+                log.error(e.getMessage());
+            } finally {
                 socket.close();
             }
-        } catch(IOException e) {
-            log.error(e.getMessage());
         }
-
     }
 
 
